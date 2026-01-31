@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
@@ -27,6 +27,8 @@ import {
     Sparkles,
     Zap,
     Upload,
+    CheckCircle2,
+    AlertCircle
 } from 'lucide-react';
 import { ProjectState, Story, TrimSize } from './types';
 import { KDP_PRESETS } from './lib/kdp-helper';
@@ -47,33 +49,114 @@ export default function ColoringBookStudio() {
     const [currentSpread, setCurrentSpread] = useState(0);
     const [isGenerating, setIsGenerating] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [storyForm, setStoryForm] = useState({ title: '', text: '', words: '' });
 
-    const addStory = () => {
+    // Story form state
+    const [storyForm, setStoryForm] = useState({ title: '', text: '', words: '' });
+    const [isEditing, setIsEditing] = useState<number | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Manage illustrations mapping: { storyIndex: dataUrl }
+    const [illustrations, setIllustrations] = useState<Record<number, string>>({});
+
+    const addOrUpdateStory = () => {
         if (!storyForm.title || !storyForm.text) return;
 
+        // Preserve formatting by keeping newlines
         const words = storyForm.words.split(',').map(w => w.trim()).filter(w => w);
+
+        // Create new story object
         const newStory: Story = {
-            order: Date.now(),
+            order: isEditing !== null ? project.stories[isEditing].order : Date.now(),
             title: storyForm.title,
             story_text: storyForm.text,
             writing_words: words,
             lesson: ''
         };
 
-        setProject({ ...project, stories: [...project.stories, newStory] });
+        if (isEditing !== null) {
+            // Update existing
+            const updatedStories = [...project.stories];
+            updatedStories[isEditing] = newStory;
+            setProject({ ...project, stories: updatedStories });
+            setIsEditing(null);
+        } else {
+            // Add new
+            setProject({ ...project, stories: [...project.stories, newStory] });
+        }
+
+        // Reset form
         setStoryForm({ title: '', text: '', words: '' });
+    };
+
+    const editStory = (index: number) => {
+        const story = project.stories[index];
+        setStoryForm({
+            title: story.title,
+            text: story.story_text,
+            words: story.writing_words.join(', ')
+        });
+        setIsEditing(index);
+        // Open the accordion item if needed (optional logic could trigger accordion state)
     };
 
     const removeStory = (index: number) => {
         setProject({ ...project, stories: project.stories.filter((_, i) => i !== index) });
+        if (isEditing === index) {
+            setIsEditing(null);
+            setStoryForm({ title: '', text: '', words: '' });
+        }
+        // Clean up illustration mapping logic if needed, simple for now
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target?.result as string;
+                // Try to match file name to story title
+                const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // remove extension
+
+                const matchedIndex = project.stories.findIndex(s =>
+                    s.title.toLowerCase().trim() === fileName.trim() ||
+                    fileName.includes(s.title.toLowerCase().trim())
+                );
+
+                if (matchedIndex !== -1) {
+                    setIllustrations(prev => ({ ...prev, [matchedIndex]: dataUrl }));
+                } else {
+                    // If no match, maybe add to a 'unmatched' queue or just alert? 
+                    // For now let's just alert
+                    alert(`Could not auto-match image "${file.name}" to any story. Please allow manual assignment in future update.`);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const triggerFileUpload = () => {
+        fileInputRef.current?.click();
     };
 
     const handleExport = async () => {
         setIsGenerating(true);
         setProgress(0);
         try {
-            const pdfBlob = await generateColoringBookPDF(project, (p) => setProgress(p));
+            // Inject illustrations into project object before export logic if needed
+            // For now the pdf-engine needs to support images. 
+            // We will pass the illustrations map to the engine later or embed it in story objects.
+
+            const projectWithImages = {
+                ...project,
+                stories: project.stories.map((s, i) => ({
+                    ...s,
+                    illustration: illustrations[i] // Attach dataUrl if exists
+                }))
+            };
+
+            const pdfBlob = await generateColoringBookPDF(projectWithImages, (p) => setProgress(p));
             saveAs(pdfBlob, `${project.title.replace(/\s+/g, '_')}_KDP.pdf`);
         } catch (e) {
             console.error("Export failed", e);
@@ -87,10 +170,20 @@ export default function ColoringBookStudio() {
 
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900">
+            {/* HIDDEN FILE INPUT */}
+            <input
+                type="file"
+                multiple
+                accept="image/png, image/jpeg, image/webp"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileUpload}
+            />
+
             {/* MODERN TOP BAR */}
             <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 relative overflow-hidden shadow-sm z-20">
                 <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200 animate-float">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
                         <Sparkles className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -126,9 +219,9 @@ export default function ColoringBookStudio() {
 
             {/* MAIN CONTENT */}
             <div className="flex-1 flex overflow-hidden">
-                {/* MODERN SIDEBAR - LIGHT THEME */}
+                {/* SIDEBAR */}
                 <aside className="w-96 bg-white border-r border-slate-200 overflow-y-auto z-10 shadow-sm">
-                    <Accordion type="multiple" defaultValue={['content', 'design', 'printing']} className="w-full">
+                    <Accordion type="multiple" defaultValue={['content']} className="w-full">
 
                         {/* CONTENT SECTION */}
                         <AccordionItem value="content" className="border-b border-slate-100">
@@ -158,13 +251,13 @@ export default function ColoringBookStudio() {
                                         Story Text
                                     </Label>
                                     <Textarea
-                                        rows={4}
+                                        rows={6}
                                         value={storyForm.text}
                                         onChange={(e) => setStoryForm({ ...storyForm, text: e.target.value })}
-                                        placeholder="Once upon a time, there was a brave little lion..."
-                                        className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-500/20 rounded-xl resize-none"
+                                        placeholder="Paste story text here. Formatting is preserved."
+                                        className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-500/20 rounded-xl resize-none whitespace-pre-wrap"
                                     />
-                                    <p className="text-[10px] text-slate-400 italic">Short, positive, age-appropriate (ages 2-7)</p>
+                                    <p className="text-[10px] text-slate-400 italic">Formatting (newlines) is preserved exactly as pasted.</p>
                                 </div>
 
                                 <div className="space-y-3">
@@ -174,19 +267,41 @@ export default function ColoringBookStudio() {
                                     <Input
                                         value={storyForm.words}
                                         onChange={(e) => setStoryForm({ ...storyForm, words: e.target.value })}
-                                        placeholder="Lion, Brave, Jungle, King, Friend"
+                                        placeholder="Lion, Brave, Jungle, King"
                                         className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-500/20 h-11 rounded-xl"
                                     />
-                                    <p className="text-[10px] text-slate-400 italic">Comma-separated vocabulary words</p>
+                                    <p className="text-[10px] text-slate-400 italic">Comma-separated. Auto-repeated 3x per line.</p>
                                 </div>
 
                                 <Button
-                                    onClick={addStory}
+                                    onClick={addOrUpdateStory}
                                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 rounded-xl shadow-md shadow-indigo-100 smooth-transition"
                                 >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Story
+                                    {isEditing !== null ? (
+                                        <>
+                                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                                            Update Story
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Add Story
+                                        </>
+                                    )}
                                 </Button>
+
+                                {isEditing !== null && (
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full text-slate-500"
+                                        onClick={() => {
+                                            setIsEditing(null);
+                                            setStoryForm({ title: '', text: '', words: '' });
+                                        }}
+                                    >
+                                        Cancel Edit
+                                    </Button>
+                                )}
 
                                 {/* STORY LIST */}
                                 <div className="pt-4 space-y-3">
@@ -198,13 +313,26 @@ export default function ColoringBookStudio() {
                                         </div>
                                     )}
                                     {project.stories.map((story, i) => (
-                                        <div key={i} className="group bg-white hover:bg-slate-50 rounded-xl p-4 smooth-transition border border-slate-200 shadow-sm">
+                                        <div
+                                            key={i}
+                                            className={`group hover:bg-slate-50 rounded-xl p-4 smooth-transition border shadow-sm cursor-pointer ${isEditing === i ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200' : 'bg-white border-slate-200'}`}
+                                            onClick={() => editStory(i)}
+                                        >
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-slate-200 text-slate-500">
                                                             Story #{i + 1}
                                                         </Badge>
+                                                        {illustrations[i] ? (
+                                                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-2 py-0.5">
+                                                                Has Image
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge className="bg-yellow-50 text-yellow-600 border-yellow-200 text-[10px] px-2 py-0.5">
+                                                                No Image
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     <p className="text-sm font-bold text-slate-900 truncate">{story.title}</p>
                                                     <p className="text-xs text-slate-500 truncate mt-1">{story.story_text}</p>
@@ -212,8 +340,11 @@ export default function ColoringBookStudio() {
                                                 <Button
                                                     size="icon"
                                                     variant="ghost"
-                                                    className="h-8 w-8 opacity-0 group-hover:opacity-100 smooth-transition text-slate-400 hover:text-red-500 hover:bg-red-50"
-                                                    onClick={() => removeStory(i)}
+                                                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        removeStory(i);
+                                                    }}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -235,27 +366,35 @@ export default function ColoringBookStudio() {
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="px-8 pb-6 space-y-4">
-                                <p className="text-sm text-slate-600">Upload coloring illustrations for each story</p>
+                                <p className="text-sm text-slate-600">Upload illustration scans for each story</p>
                                 <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-2">
-                                    <p className="text-xs text-slate-500">📁 Supported: PNG, JPG, WEBP</p>
-                                    <p className="text-xs text-slate-500">📝 File names should match story titles</p>
-                                    <p className="text-xs text-slate-500">✅ Case-insensitive matching</p>
+                                    <p className="text-xs text-slate-500">📁 Matches filenames to Story Titles</p>
+                                    <p className="text-xs text-slate-500">📝 E.g. "The Brave Lion.png" → "The Brave Lion"</p>
                                 </div>
-                                <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 h-11 rounded-xl">
+                                <Button
+                                    variant="outline"
+                                    className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 h-11 rounded-xl"
+                                    onClick={triggerFileUpload}
+                                >
                                     <Upload className="h-4 w-4 mr-2" />
                                     Upload Illustrations
                                 </Button>
+                                {Object.keys(illustrations).length > 0 && (
+                                    <p className="text-xs text-green-600 font-bold text-center mt-2">
+                                        {Object.keys(illustrations).length} images matched
+                                    </p>
+                                )}
                             </AccordionContent>
                         </AccordionItem>
 
-                        {/* DESIGN SECTION */}
+                        {/* DESIGN SECTION - Collapsed by default to focus on content */}
                         <AccordionItem value="design" className="border-b border-slate-100">
                             <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center">
                                         <Palette className="h-5 w-5 text-pink-500" />
                                     </div>
-                                    <span className="font-bold text-slate-800">Design & Templates</span>
+                                    <span className="font-bold text-slate-800">Design</span>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="px-8 pb-6 space-y-4">
@@ -274,25 +413,6 @@ export default function ColoringBookStudio() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        {/* TYPOGRAPHY SECTION */}
-                        <AccordionItem value="typography" className="border-b border-slate-100">
-                            <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                                        <Type className="h-5 w-5 text-orange-500" />
-                                    </div>
-                                    <span className="font-bold text-slate-800">Writing Practice</span>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="px-8 pb-6 space-y-4">
-                                <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-2">
-                                    <p className="text-xs font-bold text-slate-700">✍️ Dotted Tracing Font</p>
-                                    <p className="text-xs text-slate-500">Automatically applied to practice words</p>
-                                    <p className="text-xs text-slate-500">3+ repetitions per word</p>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-
                         {/* PRINTING SECTION */}
                         <AccordionItem value="printing" className="border-b border-slate-100">
                             <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
@@ -300,7 +420,7 @@ export default function ColoringBookStudio() {
                                     <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
                                         <Printer className="h-5 w-5 text-emerald-600" />
                                     </div>
-                                    <span className="font-bold text-slate-800">KDP Print Settings</span>
+                                    <span className="font-bold text-slate-800">Print Settings</span>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="px-8 pb-6 space-y-5">
@@ -311,12 +431,11 @@ export default function ColoringBookStudio() {
                                         onChange={(e) => setProject({ ...project, config: KDP_PRESETS[e.target.value as TrimSize] })}
                                         className="w-full p-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none smooth-transition"
                                     >
-                                        <option value="6x9">6 x 9 in (6.25 x 9.25 with bleed)</option>
-                                        <option value="8x10">8 x 10 in (8.25 x 10.25 with bleed)</option>
-                                        <option value="8.5x11">8.5 x 11 in (8.75 x 11.25 with bleed)</option>
+                                        <option value="6x9">6 x 9 in</option>
+                                        <option value="8x10">8 x 10 in</option>
+                                        <option value="8.5x11">8.5 x 11 in</option>
                                     </select>
                                 </div>
-
                                 <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
                                     <input
                                         type="checkbox"
@@ -325,16 +444,17 @@ export default function ColoringBookStudio() {
                                         className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                     />
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-800">Include Bleed (0.125")</p>
-                                        <p className="text-xs text-slate-500">Required for full-page illustrations</p>
+                                        <p className="text-sm font-semibold text-slate-800">Include Bleed</p>
+                                        <p className="text-xs text-slate-500">Required for full-page arts</p>
                                     </div>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
+
                     </Accordion>
                 </aside>
 
-                {/* MODERN PREVIEW AREA */}
+                {/* PREVIEW AREA */}
                 <main className="flex-1 overflow-hidden flex flex-col relative bg-slate-100">
 
                     {/* Preview Controls */}
@@ -364,21 +484,20 @@ export default function ColoringBookStudio() {
                                 <ChevronRight className="h-5 w-5" />
                             </Button>
                         </div>
-
                         <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-slate-200 px-4 py-2 font-mono">
-                            {project.config.trimSize} • {project.config.hasBleed ? 'With Bleed' : 'No Bleed'}
+                            {project.config.trimSize}
                         </Badge>
                     </div>
 
                     {/* Book Preview */}
                     <div className="flex-1 overflow-auto p-12 flex items-center justify-center relative z-0">
                         {project.stories.length === 0 ? (
-                            <div className="text-center animate-float">
+                            <div className="text-center">
                                 <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-white shadow-xl flex items-center justify-center">
                                     <Book className="h-12 w-12 text-indigo-200" />
                                 </div>
                                 <h3 className="text-2xl font-bold text-slate-800 mb-2">No Stories Yet</h3>
-                                <p className="text-slate-500">Add stories from the sidebar to see your book preview</p>
+                                <p className="text-slate-500">Add stories to see preview</p>
                             </div>
                         ) : (
                             <div className="flex gap-1 shadow-2xl rounded-sm overflow-hidden bg-slate-800 p-1" style={{ maxWidth: '90%', maxHeight: '90%' }}>
@@ -390,18 +509,22 @@ export default function ColoringBookStudio() {
                                         aspectRatio: project.config.trimSize.replace('x', '/'),
                                     }}
                                 >
-                                    <div className="w-full h-full p-8 flex items-center justify-center relative z-10">
-                                        <div className="w-full h-full border-4 border-dashed border-slate-200 bg-slate-50 rounded-lg flex items-center justify-center">
-                                            <div className="text-center text-slate-300">
-                                                <ImageIcon className="h-16 w-16 mx-auto mb-3" strokeWidth={1.5} />
-                                                <p className="text-sm font-bold uppercase tracking-wider">Illustration</p>
-                                                {currentSpread > 0 && currentSpread - 1 < project.stories.length && (
-                                                    <p className="text-xs mt-2 text-slate-400 max-w-[150px] mx-auto truncate">
-                                                        {project.stories[currentSpread - 1].title}
-                                                    </p>
-                                                )}
+                                    <div className="w-full h-full p-0 flex items-center justify-center relative z-10">
+                                        {currentSpread > 0 && currentSpread - 1 < project.stories.length && illustrations[currentSpread - 1] ? (
+                                            <img
+                                                src={illustrations[currentSpread - 1]}
+                                                alt="Illustration"
+                                                className="w-full h-full object-contain"
+                                            />
+                                        ) : (
+                                            <div className="w-[80%] h-[80%] border-4 border-dashed border-slate-200 bg-slate-50 rounded-lg flex items-center justify-center">
+                                                <div className="text-center text-slate-300">
+                                                    <ImageIcon className="h-16 w-16 mx-auto mb-3" strokeWidth={1.5} />
+                                                    <p className="text-sm font-bold uppercase tracking-wider">Illustration Area</p>
+                                                    <p className="text-xs text-slate-400 mt-2">(Upload to preview)</p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -420,32 +543,42 @@ export default function ColoringBookStudio() {
                                             </div>
                                             <h1 className="text-4xl font-black mb-4 text-slate-900">{project.title}</h1>
                                             <div className="w-20 h-1 bg-indigo-600 rounded-full mb-6"></div>
-                                            <p className="text-sm text-slate-500 font-medium">A Story & Coloring Book</p>
-                                            <p className="text-xs text-slate-400 mt-2">Ages 2-7</p>
                                         </div>
                                     ) : currentSpread - 1 < project.stories.length ? (
-                                        <div className="w-full h-full p-10 space-y-6 overflow-hidden relative z-10">
-                                            <h2 className="text-2xl font-black border-b-2 border-slate-100 pb-3 text-slate-900">
-                                                {project.stories[currentSpread - 1].title}
-                                            </h2>
-                                            <p className="text-sm leading-relaxed text-slate-700 line-clamp-[8] font-serif">
-                                                {project.stories[currentSpread - 1].story_text}
-                                            </p>
-                                            <div className="space-y-4 pt-4 border-t border-slate-100">
-                                                <p className="text-xs font-black text-indigo-600 uppercase tracking-widest">
-                                                    ✍️ Writing Practice
+                                        <div className="w-full h-full p-8 flex flex-col">
+                                            {/* Story Section */}
+                                            <div className="mb-6">
+                                                <h2 className="text-2xl font-black border-b-2 border-slate-100 pb-2 mb-4 text-slate-900">
+                                                    {project.stories[currentSpread - 1].title}
+                                                </h2>
+                                                <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800 font-serif">
+                                                    {project.stories[currentSpread - 1].story_text}
+                                                </div>
+                                            </div>
+
+                                            {/* Practice Section - Pushes to bottom if space permits, or flows naturally */}
+                                            <div className="mt-auto pt-4 border-t-2 border-slate-100">
+                                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
+                                                    Writing Practice
                                                 </p>
-                                                {project.stories[currentSpread - 1].writing_words.slice(0, 4).map((word, idx) => (
-                                                    <div key={idx} className="border-b border-dashed border-slate-300 pb-4 pt-2">
-                                                        <span className="text-3xl text-slate-300 tracking-[0.2em] block text-center opacity-50" style={{ fontFamily: 'Raleway Dots, cursive' }}>
-                                                            {word}
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                                <div className="space-y-3">
+                                                    {project.stories[currentSpread - 1].writing_words.slice(0, 5).map((word, idx) => (
+                                                        <div key={idx} className="border-b border-dashed border-slate-300 pb-2">
+                                                            <div className="flex justify-between items-center px-2">
+                                                                {/* Repeat word 3 times */}
+                                                                {[1, 2, 3].map((r) => (
+                                                                    <span key={r} className="text-2xl text-slate-300 tracking-[0.15em] font-dotted">
+                                                                        {word}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-300 relative z-10">
+                                        <div className="w-full h-full flex items-center justify-center text-slate-300">
                                             <p className="text-sm">End Matter</p>
                                         </div>
                                     )}
@@ -455,6 +588,12 @@ export default function ColoringBookStudio() {
                     </div>
                 </main>
             </div>
+
+            <style jsx>{`
+        .font-dotted {
+          font-family: 'Raleway Dots', cursive;
+        }
+      `}</style>
         </div>
     );
 }
