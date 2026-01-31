@@ -1,30 +1,31 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from 'react';
+import { Button } from '@/app/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Input } from '@/app/components/ui/input';
+import { Textarea } from '@/app/components/ui/textarea';
+import { Badge } from '@/app/components/ui/badge';
 import {
   Book,
-  Settings,
-  Palette,
-  Layout,
   Plus,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Image as ImageIcon,
-  Type,
   Trash2,
   Edit3,
-  Moon,
-  Sun,
-  Monitor
-} from "lucide-react";
-import { ProjectState, Story, Template, TrimSize } from "./types";
-import { KDP_PRESETS, getPageDimensions } from "./lib/kdp-helper";
-import { BUILT_IN_TEMPLATES } from "./lib/templates";
-import StoryDialog from "./components/StoryDialog";
-import ExportButton from "./components/ExportButton";
+  Download,
+  Settings,
+  Palette,
+  FileText,
+  Image as ImageIcon,
+  Sparkles,
+  CheckCircle2
+} from 'lucide-react';
+import { ProjectState, Story, TrimSize } from './types';
+import { KDP_PRESETS } from './lib/kdp-helper';
+import { BUILT_IN_TEMPLATES } from './lib/templates';
+import { generateColoringBookPDF } from './lib/pdf-engine';
+import { saveAs } from 'file-saver';
 
-export default function Dashboard() {
+export default function ColoringBookStudio() {
   const [project, setProject] = useState<ProjectState>({
     title: "My Coloring Book",
     config: KDP_PRESETS['8.5x11'],
@@ -35,149 +36,129 @@ export default function Dashboard() {
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingStoryIndex, setEditingStoryIndex] = useState<number | null>(null);
-  const [activeSpread, setActiveSpread] = useState(0);
-  const [sidebarTab, setSidebarTab] = useState<'content' | 'style' | 'settings'>('content');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [formData, setFormData] = useState({ title: '', story_text: '', writing_words: '' });
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  // Total spreads = (Front Matter pages / 2) + Story Spreads + (End Matter pages / 2)
-  const totalSpreads = Math.ceil((2 + project.stories.length * 2 + 2) / 2);
-
-  const addOrUpdateStory = (story: Story) => {
-    const newStories = [...project.stories];
-    if (editingStoryIndex !== null) {
-      newStories[editingStoryIndex] = story;
+  const openDialog = (index?: number) => {
+    if (index !== undefined) {
+      const story = project.stories[index];
+      setFormData({
+        title: story.title,
+        story_text: story.story_text,
+        writing_words: story.writing_words.join(', ')
+      });
+      setEditingIndex(index);
     } else {
-      newStories.push(story);
+      setFormData({ title: '', story_text: '', writing_words: '' });
+      setEditingIndex(null);
     }
+    setIsDialogOpen(true);
+  };
+
+  const saveStory = () => {
+    const words = formData.writing_words.split(',').map(w => w.trim()).filter(w => w);
+    const newStory: Story = {
+      order: editingIndex !== null ? project.stories[editingIndex].order : Date.now(),
+      title: formData.title,
+      story_text: formData.story_text,
+      writing_words: words,
+      lesson: ''
+    };
+
+    const newStories = [...project.stories];
+    if (editingIndex !== null) {
+      newStories[editingIndex] = newStory;
+    } else {
+      newStories.push(newStory);
+    }
+
     setProject({ ...project, stories: newStories });
-    setEditingStoryIndex(null);
+    setIsDialogOpen(false);
   };
 
   const removeStory = (index: number) => {
-    const newStories = project.stories.filter((_, i) => i !== index);
-    setProject({ ...project, stories: newStories });
+    setProject({ ...project, stories: project.stories.filter((_, i) => i !== index) });
+  };
+
+  const handleExport = async () => {
+    setIsGenerating(true);
+    setProgress(0);
+    try {
+      const pdfBlob = await generateColoringBookPDF(project, (p) => setProgress(p));
+      saveAs(pdfBlob, `${project.title.replace(/\s+/g, '_')}_KDP_Interior.pdf`);
+    } catch (e) {
+      console.error("Export failed", e);
+      alert("Failed to generate PDF. Check console for details.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
-    <div className="app-container">
-      {/* Sidebar */}
-      <div className="sidebar">
-        <div className="p-6 border-bottom">
-          <h1 className="text-xl font-bold flex items-center gap-2 text-gray-800">
-            <Book className="text-accent" />
-            Coloring Gen
-          </h1>
-        </div>
-
-        {/* Sidebar Nav */}
-        <div className="flex px-4 gap-1 border-b">
-          <button
-            onClick={() => setSidebarTab('content')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${sidebarTab === 'content' ? 'border-accent text-accent' : 'border-transparent text-gray-400'}`}
-          >
-            Content
-          </button>
-          <button
-            onClick={() => setSidebarTab('style')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${sidebarTab === 'style' ? 'border-accent text-accent' : 'border-transparent text-gray-400'}`}
-          >
-            Style
-          </button>
-          <button
-            onClick={() => setSidebarTab('settings')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${sidebarTab === 'settings' ? 'border-accent text-accent' : 'border-transparent text-gray-400'}`}
-          >
-            KDP
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          {sidebarTab === 'content' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="font-bold text-gray-700">Book Stories</h3>
-                <button
-                  onClick={() => { setEditingStoryIndex(null); setIsDialogOpen(true); }}
-                  className="p-2 bg-accent-soft text-accent rounded-lg hover:bg-accent hover:text-white transition-all"
-                >
-                  <Plus size={20} />
-                </button>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8 items-start">
+        {/* LEFT SIDEBAR */}
+        <div className="lg:col-span-1 space-y-6">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Book className="h-5 w-5 text-indigo-600" />
+                <CardTitle className="text-lg">Book Stories</CardTitle>
               </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                onClick={() => openDialog()}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Story
+              </Button>
 
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {project.stories.length === 0 && (
-                  <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed rounded-xl">
-                    No stories yet.<br />Click + to add your first one.
+                  <div className="text-center py-8 text-slate-400 text-sm border-2 border-dashed rounded-lg">
+                    No stories yet.<br />Click above to add your first one.
                   </div>
                 )}
                 {project.stories.map((story, i) => (
-                  <div key={i} className="group p-4 bg-gray-50 rounded-xl border hover:border-accent/50 transition-all">
+                  <div key={i} className="group p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border hover:border-indigo-200 transition-all">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Spread {i + 2}</span>
+                      <Badge variant="secondary" className="text-[10px]">Story {i + 1}</Badge>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditingStoryIndex(i); setIsDialogOpen(true); }} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit3 size={14} /></button>
-                        <button onClick={() => removeStory(i)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={14} /></button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openDialog(i)}>
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500" onClick={() => removeStory(i)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                     <p className="font-bold text-sm truncate">{story.title}</p>
-                    <p className="text-[10px] text-gray-500 line-clamp-1 italic">{story.story_text}</p>
+                    <p className="text-[10px] text-slate-500 line-clamp-1 italic">{story.story_text}</p>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            </CardContent>
+          </Card>
 
-          {sidebarTab === 'style' && (
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h3 className="font-bold text-gray-700">Active Template</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {BUILT_IN_TEMPLATES.map(t => (
-                    <button
-                      key={t.id}
-                      onClick={() => setProject({ ...project, template: t })}
-                      className={`p-3 text-[10px] font-bold rounded-lg border-2 transition-all ${project.template.id === t.id ? 'border-accent bg-accent/5 text-accent' : 'border-gray-100'}`}
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                </div>
+          {/* KDP SETTINGS */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-indigo-600" />
+                <CardTitle className="text-lg">KDP Settings</CardTitle>
               </div>
-
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="font-bold text-gray-700">Display Options</h3>
-                <div className="space-y-4">
-                  <label className="flex items-center justify-between text-xs font-semibold">
-                    <span>Page Numbers</span>
-                    <button
-                      onClick={() => setProject({ ...project, template: { ...project.template, pageNumbers: !project.template.pageNumbers } })}
-                      className={`w-10 h-5 rounded-full relative transition-all ${project.template.pageNumbers ? 'bg-accent' : 'bg-gray-200'}`}
-                    >
-                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${project.template.pageNumbers ? 'left-6' : 'left-1'}`} />
-                    </button>
-                  </label>
-                  <label className="flex items-center justify-between text-xs font-semibold">
-                    <span>Interior Border</span>
-                    <button
-                      onClick={() => setProject({ ...project, template: { ...project.template, hasBorder: !project.template.hasBorder } })}
-                      className={`w-10 h-5 rounded-full relative transition-all ${project.template.hasBorder ? 'bg-accent' : 'bg-gray-200'}`}
-                    >
-                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${project.template.hasBorder ? 'left-6' : 'left-1'}`} />
-                    </button>
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {sidebarTab === 'settings' && (
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-gray-500 uppercase">Trim Size</label>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-600 uppercase mb-2 block">Trim Size</label>
                 <select
                   value={project.config.trimSize}
                   onChange={e => setProject({ ...project, config: KDP_PRESETS[e.target.value as TrimSize] })}
-                  className="w-full p-3 bg-gray-50 border rounded-xl font-bold text-sm outline-none"
+                  className="w-full p-2 bg-slate-50 border rounded-md text-sm"
                 >
                   <option value="6x9">6 x 9 in</option>
                   <option value="8x10">8 x 10 in</option>
@@ -185,113 +166,140 @@ export default function Dashboard() {
                 </select>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-gray-500 uppercase">Bleed</label>
-                <div
-                  onClick={() => setProject({ ...project, config: { ...project.config, hasBleed: !project.config.hasBleed } })}
-                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${project.config.hasBleed ? 'border-accent bg-accent/5' : 'bg-gray-50'}`}
+              <div>
+                <label className="text-xs font-bold text-slate-600 uppercase mb-2 block">Template</label>
+                <select
+                  value={project.template.id}
+                  onChange={e => setProject({ ...project, template: BUILT_IN_TEMPLATES.find(t => t.id === e.target.value)! })}
+                  className="w-full p-2 bg-slate-50 border rounded-md text-sm"
                 >
-                  <p className="text-sm font-bold">Include Bleed</p>
-                  <p className="text-[10px] text-gray-500">Adds 0.125" for full-page art</p>
-                </div>
+                  {BUILT_IN_TEMPLATES.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
               </div>
 
-              <div className="pt-6 border-t">
-                <ExportButton project={project} />
-              </div>
-            </div>
-          )}
+              <Button
+                onClick={handleExport}
+                disabled={project.stories.length === 0 || isGenerating}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold h-12"
+              >
+                {isGenerating ? (
+                  <>Generating {progress}%...</>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export KDP PDF
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="main-content">
-        <header className="flex justify-between items-center mb-12">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Book Spread Preview</h2>
-            <p className="text-gray-500 text-sm">Visualizing {project.config.trimSize} Layout</p>
-          </div>
-          <div className="flex items-center gap-4 bg-white p-2 rounded-full shadow-sm border">
-            <button onClick={() => setActiveSpread(Math.max(0, activeSpread - 1))} className="p-2 hover:bg-gray-100 rounded-full transition-all"><ChevronLeft /></button>
-            <span className="text-sm font-bold w-20 text-center">Spread {activeSpread + 1} / {totalSpreads}</span>
-            <button onClick={() => setActiveSpread(Math.min(totalSpreads - 1, activeSpread + 1))} className="p-2 hover:bg-gray-100 rounded-full transition-all"><ChevronRight /></button>
-          </div>
-        </header>
-
-        <div className="flex-1 flex items-center justify-center overflow-hidden">
-          <div className="book-container scale-[0.85] lg:scale-100 transition-transform">
-            <div
-              className="spread"
-              style={{
-                ['--aspect-ratio' as any]: project.config.trimSize.split('x').join(' / ')
-              }}
-            >
-              {/* Left Page (Image Content) */}
-              <div className="page page-left">
-                <div className="page-content bg-gray-50 items-center justify-center">
-                  {activeSpread === 0 ? (
-                    <div className="text-center space-y-4">
-                      <Monitor className="mx-auto text-gray-300" size={48} />
-                      <p className="text-sm font-bold text-gray-400">Title Page Art</p>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full border-4 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-gray-300">
-                      <ImageIcon size={64} strokeWidth={1} />
-                      <p className="mt-4 font-bold uppercase tracking-widest text-xs">Illustration Area</p>
-                    </div>
-                  )}
-                  {project.template.pageNumbers && <div className="absolute bottom-4 left-4 text-[10px] font-bold text-gray-400">{(activeSpread * 2) + 1}</div>}
+        {/* RIGHT PREVIEW AREA */}
+        <div className="lg:col-span-2">
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl">Book Preview</CardTitle>
+              <p className="text-sm text-slate-500">Visualizing {project.config.trimSize} Layout</p>
+            </CardHeader>
+            <CardContent>
+              {project.stories.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                  <Book className="h-16 w-16 mb-4" />
+                  <p className="text-lg font-bold">No Stories Added Yet</p>
+                  <p className="text-sm">Add your first story to see the preview</p>
                 </div>
-              </div>
-
-              {/* Right Page (Story Content) */}
-              <div className="page page-right">
-                <div className="page-content relative">
-                  {activeSpread === 0 ? (
-                    <div className="text-center py-20 px-8">
-                      <h1 className="text-3xl font-bold mb-4">{project.title}</h1>
-                      <div className="w-16 h-1 bg-accent mx-auto mb-8"></div>
-                      <p className="text-sm text-gray-400">By Author Name</p>
-                    </div>
-                  ) : (
-                    activeSpread - 1 < project.stories.length ? (
-                      <div className="space-y-6">
-                        <h2 className="text-2xl font-bold text-center border-b pb-4">{project.stories[activeSpread - 1].title}</h2>
-                        <p className="text-xs leading-relaxed text-gray-600 line-clamp-[12]">
-                          {project.stories[activeSpread - 1].story_text}
-                        </p>
-                        <div className="space-y-3 pt-6">
-                          <p className="text-[10px] font-bold text-accent uppercase tracking-widest">Writing Practice</p>
-                          {project.stories[activeSpread - 1].writing_words.map((word, idx) => (
-                            <div key={idx} className="h-8 border-b border-gray-100 flex items-center px-2">
-                              <span className="text-xl font-dotted tracking-widest text-gray-300">
-                                {word}
-                              </span>
-                            </div>
-                          ))}
+              ) : (
+                <div className="space-y-8">
+                  {project.stories.map((story, i) => (
+                    <div key={i} className="border-2 border-slate-200 rounded-xl p-6 bg-white">
+                      <div className="flex gap-6">
+                        <div className="w-1/2 border-2 border-dashed border-slate-200 rounded-lg p-8 flex items-center justify-center bg-slate-50">
+                          <div className="text-center text-slate-300">
+                            <ImageIcon className="h-16 w-16 mx-auto mb-2" />
+                            <p className="text-xs font-bold uppercase">Illustration Area</p>
+                          </div>
+                        </div>
+                        <div className="w-1/2 space-y-4">
+                          <h3 className="text-xl font-bold border-b pb-2">{story.title}</h3>
+                          <p className="text-xs leading-relaxed text-slate-600 line-clamp-6">{story.story_text}</p>
+                          <div className="space-y-2 pt-4">
+                            <p className="text-[10px] font-bold text-indigo-600 uppercase">Writing Practice</p>
+                            {story.writing_words.slice(0, 5).map((word, idx) => (
+                              <div key={idx} className="border-b border-slate-200 pb-1">
+                                <span className="text-lg text-slate-300 font-dotted">{word}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-300 italic text-sm">
-                        Empty / End Matter Page
-                      </div>
-                    )
-                  )}
-                  {project.template.pageNumbers && <div className="absolute bottom-4 right-4 text-[10px] font-bold text-gray-400">{(activeSpread * 2) + 2}</div>}
-                  {project.template.hasBorder && <div className="absolute inset-4 border border-gray-200 pointer-events-none"></div>}
+                    </div>
+                  ))}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* DIALOG */}
+      {isDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl p-8 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <FileText className="text-indigo-600" />
+                {editingIndex !== null ? 'Edit Story' : 'Add New Story'}
+              </h2>
+              <Button size="icon" variant="ghost" onClick={() => setIsDialogOpen(false)}>
+                <Sparkles className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm font-bold text-slate-600 uppercase mb-2 block">Heading / Title</label>
+                <Input
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="e.g. The Brave Little Lion"
+                  className="text-lg font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-slate-600 uppercase mb-2 block">Story Text</label>
+                <Textarea
+                  rows={4}
+                  value={formData.story_text}
+                  onChange={e => setFormData({ ...formData, story_text: e.target.value })}
+                  placeholder="Write the moral story here..."
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-slate-600 uppercase mb-2 block">Practice Words (Comma separated)</label>
+                <Input
+                  value={formData.writing_words}
+                  onChange={e => setFormData({ ...formData, writing_words: e.target.value })}
+                  placeholder="Lion, Brave, Jungle, Kingdom"
+                />
+                <p className="text-[10px] text-slate-400 italic mt-1">Recommended: 4–5 words for optimal tracing space.</p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button onClick={saveStory} className="bg-indigo-600 hover:bg-indigo-700 px-8">
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Save Story
+                </Button>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <StoryDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onSave={addOrUpdateStory}
-        initialData={editingStoryIndex !== null ? project.stories[editingStoryIndex] : undefined}
-      />
+      )}
 
       <style jsx>{`
         .font-dotted {

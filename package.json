@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "file-saver": "^2.0.5",
     "jspdf": "^4.0.0",
     "lucide-react": "^0.563.0",
@@ -17,7 +19,9 @@
     "pdf-lib": "^1.17.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-dropzone": "^14.4.0"
+    "react-dropzone": "^14.4.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
@@ -25,8 +29,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.24",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5"
   }
 }
