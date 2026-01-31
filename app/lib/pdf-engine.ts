@@ -47,22 +47,33 @@ export async function generateColoringBookPDF(
     }
 
     // Ensure stories start on LEFT page (even page number)
+    // If current page count is Odd (meaning last page was a Right page), next added page will be Even (Left).
+    // If current page count is Even (last page was Left), next added page will be Odd (Right).
+    // We want the Story spread to start on a LEFT page (Even).
+
     let pageNum = pdf.getNumberOfPages();
     if (pageNum % 2 !== 0) {
-        pdf.addPage(); // Add blank page
+        // Current count is Odd (e.g., 1, 3, 5). So the LAST page is a Right-side page.
+        // The NEXT page added will be an Even (Left-side) page.
+        // Perfect! We don't need to add a blank page.
+    } else {
+        // Current count is Even (e.g., 2, 4). So the LAST page is a Left-side page.
+        // The NEXT page added will be an Odd (Right-side) page.
+        // But we want to start on a LEFT page. So we need to add a blank Right page first.
+        pdf.addPage();
         updateProgress();
     }
 
     // Add story spreads
     for (const story of project.stories) {
-        // LEFT page: Illustration
-        pdf.addPage();
-        await addIllustrationPage(pdf, story, project);
-        updateProgress();
-
-        // RIGHT page: Story + Writing Practice
+        // LEFT page: Story + Writing Practice
         pdf.addPage();
         addStoryTextPage(pdf, story, project, dottedFontLoaded);
+        updateProgress();
+
+        // RIGHT page: Illustration
+        pdf.addPage();
+        await addIllustrationPage(pdf, story, project);
         updateProgress();
     }
 
@@ -91,47 +102,61 @@ async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectSta
     const h = height * INCHES_TO_POINTS;
     const margin = project.config.margins;
 
+    // Frame size (smaller than page logic)
+    // 85% of standard safe width
+    const safeAvailableW = w - (margin.inner + margin.outer) * INCHES_TO_POINTS;
+    const safeAvailableH = h - (margin.top + margin.bottom) * INCHES_TO_POINTS;
+
+    const frameW = safeAvailableW * 0.85;
+    const frameH = safeAvailableH * 0.85;
+
+    const centerX = w / 2;
+    const centerY = h / 2;
+
+    const frameX = centerX - (frameW / 2);
+    const frameY = centerY - (frameH / 2);
+
+    // Draw Outline Frame
+    pdf.setDrawColor(0); // Black for outline
+    pdf.setLineWidth(3); // Thick border
+    pdf.rect(frameX, frameY, frameW, frameH);
+
     // Add Image if available
     if (story.illustration) {
         try {
-            // Calculate fit
+            // Calculate fit inside the frame (padding 10pts inside frame)
+            const padding = 10;
+            const innerW = frameW - (padding * 2);
+            const innerH = frameH - (padding * 2);
+
             const imgProps = pdf.getImageProperties(story.illustration);
             const imgRatio = imgProps.width / imgProps.height;
-            const pageRatio = width / height;
+            const frameRatio = innerW / innerH;
 
-            let finalW = w;
-            let finalH = h;
+            let finalW = innerW;
+            let finalH = innerH;
 
-            // Basic "contain" logic respecting margins if needed, 
-            // but for "coloring book" often we want full bleed or near full bleed.
-            // Let's settle for a safe margin fit for now to be safe.
-            const safeW = w - (margin.inner + margin.outer) * INCHES_TO_POINTS;
-            const safeH = h - (margin.top + margin.bottom) * INCHES_TO_POINTS;
-
-            if (imgRatio > pageRatio) {
-                finalW = safeW;
-                finalH = safeW / imgRatio;
+            if (imgRatio > frameRatio) {
+                finalH = innerW / imgRatio;
             } else {
-                finalH = safeH;
-                finalW = safeH * imgRatio;
+                finalW = innerH * imgRatio;
             }
 
-            const x = (w - finalW) / 2; // Center horizontally
-            const y = (h - finalH) / 2; // Center vertically
+            const imgX = frameX + padding + (innerW - finalW) / 2;
+            const imgY = frameY + padding + (innerH - finalH) / 2;
 
-            pdf.addImage(story.illustration, 'PNG', x / INCHES_TO_POINTS, y / INCHES_TO_POINTS, finalW / INCHES_TO_POINTS, finalH / INCHES_TO_POINTS);
+            pdf.addImage(story.illustration, 'PNG', imgX / INCHES_TO_POINTS, imgY / INCHES_TO_POINTS, finalW / INCHES_TO_POINTS, finalH / INCHES_TO_POINTS);
         } catch (e) {
             console.error("Failed to add image to PDF", e);
-            // Fallback text
             pdf.setFontSize(14);
             pdf.setTextColor(200);
             pdf.text('[Error loading image]', w / 2, h / 2, { align: 'center' });
         }
     } else {
-        // Placeholder
+        // Placeholder text inside frame
         pdf.setFontSize(14);
         pdf.setTextColor(200);
-        pdf.text('[Place Illustration Here]', w / 2, h / 2, { align: 'center' });
+        pdf.text('[Illustration Here]', w / 2, h / 2, { align: 'center' });
     }
 }
 
@@ -140,6 +165,10 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, useDo
     const w = width * INCHES_TO_POINTS;
     const h = height * INCHES_TO_POINTS;
     const margin = project.config.margins;
+
+    // Use template settings
+    const fontFamily = project.template.fontFamily || 'helvetica';
+    const fontSize = project.template.fontSize || 12;
 
     const isEven = pdf.getNumberOfPages() % 2 === 0;
     // Margins in points
@@ -150,29 +179,27 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, useDo
     let currentY = margin.top * INCHES_TO_POINTS + 40;
 
     // Title
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(22);
+    pdf.setFont(fontFamily, 'bold');
+    pdf.setFontSize(24);
     pdf.setTextColor(0); // Black for title
     pdf.text(story.title, w / 2, currentY, { align: 'center' });
     currentY += 40;
 
     // Story Text (Preserving formatting)
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(12);
+    pdf.setFont(fontFamily, 'normal');
+    pdf.setFontSize(fontSize);
     pdf.setTextColor(0); // Black for text
 
-    // Handle text block
-    // splitTextToSize handles newlines if passed correctly, but let's be explicit
     const paragraphs = story.story_text.split('\n');
 
     paragraphs.forEach(para => {
         if (!para.trim()) {
-            currentY += 12; // Empty line spacing
+            currentY += fontSize; // Empty line spacing
             return;
         }
         const lines = pdf.splitTextToSize(para, contentWidth);
         pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
-        currentY += lines.length * 12 * 1.5 + 12; // Add extra space after para
+        currentY += lines.length * fontSize * 1.5 + fontSize; // Add extra space after para
     });
 
     currentY += 20; // Extra gap before practice
@@ -180,7 +207,7 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, useDo
     // Writing Practice Header
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(10);
-    pdf.setTextColor(150); // Grey header
+    pdf.setTextColor(100); // Darker Grey header
     pdf.text("WRITING PRACTICE", w / 2, currentY, { align: 'center' });
     currentY += 30;
 
@@ -190,21 +217,20 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, useDo
     } else {
         pdf.setFont('helvetica', 'normal');
     }
-    pdf.setFontSize(36); // Good size for tracing
-    pdf.setTextColor(180); // Light Grey for tracing
+    pdf.setFontSize(28); // Smaller size
+    pdf.setTextColor(100); // Darker Grey
 
     const practiceWords = story.writing_words.slice(0, 5);
 
     practiceWords.forEach((word) => {
         // Draw guide line
-        pdf.setDrawColor(200);
+        pdf.setDrawColor(180);
         pdf.setLineWidth(0.5);
         pdf.setLineDash([2, 2], 0);
-        pdf.line(marginLeft, currentY + 8, w - marginRight, currentY + 8); // Baseline
+        pdf.line(marginLeft, currentY + 6, w - marginRight, currentY + 6); // Baseline adjusted
         pdf.setLineDash([], 0);
 
         // Text repeatedly
-        // Calculate simple spacing: divide width by 3
         const sectionW = contentWidth / 3;
 
         // 1st
@@ -214,7 +240,7 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, useDo
         // 3rd
         pdf.text(word, marginLeft + sectionW * 2.5, currentY, { align: 'center' });
 
-        currentY += 60; // Spacing between rows
+        currentY += 50; // Spacing
     });
 
     pdf.setTextColor(0);

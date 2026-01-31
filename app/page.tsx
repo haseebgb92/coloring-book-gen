@@ -27,8 +27,7 @@ import {
     Sparkles,
     Zap,
     Upload,
-    CheckCircle2,
-    AlertCircle
+    CheckCircle2
 } from 'lucide-react';
 import { ProjectState, Story, TrimSize } from './types';
 import { KDP_PRESETS } from './lib/kdp-helper';
@@ -96,7 +95,6 @@ export default function ColoringBookStudio() {
             words: story.writing_words.join(', ')
         });
         setIsEditing(index);
-        // Open the accordion item if needed (optional logic could trigger accordion state)
     };
 
     const removeStory = (index: number) => {
@@ -105,7 +103,6 @@ export default function ColoringBookStudio() {
             setIsEditing(null);
             setStoryForm({ title: '', text: '', words: '' });
         }
-        // Clean up illustration mapping logic if needed, simple for now
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,8 +124,6 @@ export default function ColoringBookStudio() {
                 if (matchedIndex !== -1) {
                     setIllustrations(prev => ({ ...prev, [matchedIndex]: dataUrl }));
                 } else {
-                    // If no match, maybe add to a 'unmatched' queue or just alert? 
-                    // For now let's just alert
                     alert(`Could not auto-match image "${file.name}" to any story. Please allow manual assignment in future update.`);
                 }
             };
@@ -144,15 +139,11 @@ export default function ColoringBookStudio() {
         setIsGenerating(true);
         setProgress(0);
         try {
-            // Inject illustrations into project object before export logic if needed
-            // For now the pdf-engine needs to support images. 
-            // We will pass the illustrations map to the engine later or embed it in story objects.
-
             const projectWithImages = {
                 ...project,
                 stories: project.stories.map((s, i) => ({
                     ...s,
-                    illustration: illustrations[i] // Attach dataUrl if exists
+                    illustration: illustrations[i]
                 }))
             };
 
@@ -168,9 +159,11 @@ export default function ColoringBookStudio() {
 
     const totalSpreads = Math.max(1, Math.ceil((project.stories.length * 2 + 4) / 2));
 
+    // Determine styles based on template
+    const fontFamilyStyle = project.template.fontFamily || 'Helvetica, sans-serif';
+
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900">
-            {/* HIDDEN FILE INPUT */}
             <input
                 type="file"
                 multiple
@@ -183,7 +176,7 @@ export default function ColoringBookStudio() {
             {/* MODERN TOP BAR */}
             <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 relative overflow-hidden shadow-sm z-20">
                 <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200 animate-float">
                         <Sparkles className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -369,7 +362,6 @@ export default function ColoringBookStudio() {
                                 <p className="text-sm text-slate-600">Upload illustration scans for each story</p>
                                 <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-2">
                                     <p className="text-xs text-slate-500">📁 Matches filenames to Story Titles</p>
-                                    <p className="text-xs text-slate-500">📝 E.g. "The Brave Lion.png" → "The Brave Lion"</p>
                                 </div>
                                 <Button
                                     variant="outline"
@@ -387,7 +379,7 @@ export default function ColoringBookStudio() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        {/* DESIGN SECTION - Collapsed by default to focus on content */}
+                        {/* DESIGN SECTION */}
                         <AccordionItem value="design" className="border-b border-slate-100">
                             <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
                                 <div className="flex items-center gap-3">
@@ -445,12 +437,10 @@ export default function ColoringBookStudio() {
                                     />
                                     <div>
                                         <p className="text-sm font-semibold text-slate-800">Include Bleed</p>
-                                        <p className="text-xs text-slate-500">Required for full-page arts</p>
                                     </div>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
-
                     </Accordion>
                 </aside>
 
@@ -492,43 +482,17 @@ export default function ColoringBookStudio() {
                     {/* Book Preview */}
                     <div className="flex-1 overflow-auto p-12 flex items-center justify-center relative z-0">
                         {project.stories.length === 0 ? (
-                            <div className="text-center">
+                            <div className="text-center animate-float">
                                 <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-white shadow-xl flex items-center justify-center">
                                     <Book className="h-12 w-12 text-indigo-200" />
                                 </div>
                                 <h3 className="text-2xl font-bold text-slate-800 mb-2">No Stories Yet</h3>
-                                <p className="text-slate-500">Add stories to see preview</p>
+                                <p className="text-slate-500">Add stories from the sidebar to see preview</p>
                             </div>
                         ) : (
                             <div className="flex gap-1 shadow-2xl rounded-sm overflow-hidden bg-slate-800 p-1" style={{ maxWidth: '90%', maxHeight: '90%' }}>
-                                {/* Left Page - Illustration */}
-                                <div
-                                    className="bg-white flex items-center justify-center relative overflow-hidden"
-                                    style={{
-                                        width: '400px',
-                                        aspectRatio: project.config.trimSize.replace('x', '/'),
-                                    }}
-                                >
-                                    <div className="w-full h-full p-0 flex items-center justify-center relative z-10">
-                                        {currentSpread > 0 && currentSpread - 1 < project.stories.length && illustrations[currentSpread - 1] ? (
-                                            <img
-                                                src={illustrations[currentSpread - 1]}
-                                                alt="Illustration"
-                                                className="w-full h-full object-contain"
-                                            />
-                                        ) : (
-                                            <div className="w-[80%] h-[80%] border-4 border-dashed border-slate-200 bg-slate-50 rounded-lg flex items-center justify-center">
-                                                <div className="text-center text-slate-300">
-                                                    <ImageIcon className="h-16 w-16 mx-auto mb-3" strokeWidth={1.5} />
-                                                    <p className="text-sm font-bold uppercase tracking-wider">Illustration Area</p>
-                                                    <p className="text-xs text-slate-400 mt-2">(Upload to preview)</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
 
-                                {/* Right Page - Story + Writing Practice */}
+                                {/* LEFT PAGE - STORY + PRACTICE */}
                                 <div
                                     className="bg-white flex items-start justify-center relative overflow-hidden"
                                     style={{
@@ -541,33 +505,36 @@ export default function ColoringBookStudio() {
                                             <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-6">
                                                 <Sparkles className="h-8 w-8 text-indigo-500" />
                                             </div>
-                                            <h1 className="text-4xl font-black mb-4 text-slate-900">{project.title}</h1>
+                                            <h1 className="text-4xl font-black mb-4 text-slate-900" style={{ fontFamily: fontFamilyStyle }}>{project.title}</h1>
                                             <div className="w-20 h-1 bg-indigo-600 rounded-full mb-6"></div>
                                         </div>
                                     ) : currentSpread - 1 < project.stories.length ? (
                                         <div className="w-full h-full p-8 flex flex-col">
                                             {/* Story Section */}
                                             <div className="mb-6">
-                                                <h2 className="text-2xl font-black border-b-2 border-slate-100 pb-2 mb-4 text-slate-900">
+                                                <h2 className="text-2xl font-bold mb-4 text-slate-900 text-center" style={{ fontFamily: fontFamilyStyle }}>
                                                     {project.stories[currentSpread - 1].title}
                                                 </h2>
-                                                <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800 font-serif">
+                                                <div
+                                                    className="whitespace-pre-wrap text-sm leading-relaxed text-slate-900"
+                                                    style={{ fontFamily: fontFamilyStyle }}
+                                                >
                                                     {project.stories[currentSpread - 1].story_text}
                                                 </div>
                                             </div>
 
-                                            {/* Practice Section - Pushes to bottom if space permits, or flows naturally */}
-                                            <div className="mt-auto pt-4 border-t-2 border-slate-100">
-                                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
+                                            {/* Practice Section */}
+                                            <div className="mt-auto pt-4">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 text-center">
                                                     Writing Practice
                                                 </p>
                                                 <div className="space-y-3">
                                                     {project.stories[currentSpread - 1].writing_words.slice(0, 5).map((word, idx) => (
                                                         <div key={idx} className="border-b border-dashed border-slate-300 pb-2">
                                                             <div className="flex justify-between items-center px-2">
-                                                                {/* Repeat word 3 times */}
+                                                                {/* Repeated 3 times, smaller and darker */}
                                                                 {[1, 2, 3].map((r) => (
-                                                                    <span key={r} className="text-2xl text-slate-300 tracking-[0.15em] font-dotted">
+                                                                    <span key={r} className="text-xl text-slate-500 tracking-[0.1em] font-dotted">
                                                                         {word}
                                                                     </span>
                                                                 ))}
@@ -583,6 +550,36 @@ export default function ColoringBookStudio() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* RIGHT PAGE - ILLUSTRATION */}
+                                <div
+                                    className="bg-white flex items-center justify-center relative overflow-hidden"
+                                    style={{
+                                        width: '400px',
+                                        aspectRatio: project.config.trimSize.replace('x', '/'),
+                                    }}
+                                >
+                                    <div className="w-full h-full p-0 flex items-center justify-center relative z-10">
+                                        <div className="relative border-[3px] border-slate-900 w-[85%] h-[85%] flex items-center justify-center overflow-hidden">
+                                            {/* This frame mimics the PDF outline */}
+                                            {currentSpread > 0 && currentSpread - 1 < project.stories.length && illustrations[currentSpread - 1] ? (
+                                                <div className="w-full h-full p-3 flex items-center justify-center">
+                                                    <img
+                                                        src={illustrations[currentSpread - 1]}
+                                                        alt="Illustration"
+                                                        className="max-w-full max-h-full object-contain"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="text-center text-slate-300">
+                                                    <ImageIcon className="h-16 w-16 mx-auto mb-3" strokeWidth={1.5} />
+                                                    <p className="text-xs font-bold uppercase tracking-wider">Illustration Frame</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
                         )}
                     </div>
