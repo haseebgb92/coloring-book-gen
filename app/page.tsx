@@ -34,6 +34,7 @@ import {
 import { ProjectState, Story, TrimSize } from './types';
 import { KDP_PRESETS } from './lib/kdp-helper';
 import { BUILT_IN_TEMPLATES } from './lib/templates';
+import { GOOGLE_FONTS, PREVIEW_FONTS_LINK } from './lib/fonts';
 import { generateColoringBookPDF } from './lib/pdf-engine';
 import { saveAs } from 'file-saver';
 
@@ -66,6 +67,7 @@ export default function ColoringBookStudio() {
     const addOrUpdateStory = () => {
         if (!storyForm.title || !storyForm.text) return;
 
+        // Preserve formatting by keeping newlines
         const words = storyForm.words.split(',').map(w => w.trim()).filter(w => w);
 
         // Create new story object
@@ -88,6 +90,7 @@ export default function ColoringBookStudio() {
             setProject({ ...project, stories: [...project.stories, newStory] });
         }
 
+        // Reset form
         setStoryForm({ title: '', text: '', words: '' });
     };
 
@@ -103,31 +106,11 @@ export default function ColoringBookStudio() {
 
     const removeStory = (index: number) => {
         setProject({ ...project, stories: project.stories.filter((_, i) => i !== index) });
-
-        // Also remove illustration
-        const newIllustrations = { ...illustrations };
-        // We need to shift keys or just rebuild. Easier to rebuild:
-        // But since stories array shifts, indices change! This is why referencing by ID is better, 
-        // but for now, let's just accept index-based state requires care.
-        // If I delete idx 2, existing 3 becomes 2. 
-        // So 'illustrations' map is now invalid.
-        // Let's just reset the illustration for the deleted index and shift others? 
-        // This is complex. 
-
-        // Simplified Hack: We won't shift for now, users might need to re-upload if they delete in middle. 
-        // Ideally, illustrations should be part of the Story object. 
-        // Lets MOVE illustration into the Story Object for safer state management.
-
         if (isEditing === index) {
             setIsEditing(null);
             setStoryForm({ title: '', text: '', words: '' });
         }
     };
-
-    // NEW: Handling illustrations inside the Story object is cleaner, but I maintained separate state before.
-    // Let's migrate to storing dataUrl in ProjectState for robustness.
-    // Actually, I'll keep the separate state but fix the deletion issue later. 
-    // For now, let's fix the "Manual Upload" request which is critical.
 
     const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -137,9 +120,9 @@ export default function ColoringBookStudio() {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const dataUrl = event.target?.result as string;
-                const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
+                // Try to match file name to story title
+                const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // remove extension
 
-                // Find by title
                 const matchedIndex = project.stories.findIndex(s =>
                     s.title.toLowerCase().trim() === fileName.trim() ||
                     fileName.includes(s.title.toLowerCase().trim())
@@ -164,7 +147,7 @@ export default function ColoringBookStudio() {
             setAttachingToId(null); // Reset
         };
         reader.readAsDataURL(file);
-        e.target.value = ''; // Allow re-select same file
+        e.target.value = '';
     };
 
     const removeImage = (e: React.MouseEvent, index: number) => {
@@ -201,6 +184,9 @@ export default function ColoringBookStudio() {
 
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900">
+            {/* Load Fonts for Preview */}
+            <link href={PREVIEW_FONTS_LINK} rel="stylesheet" />
+
             {/* Hidden Inputs */}
             <input
                 type="file"
@@ -259,7 +245,7 @@ export default function ColoringBookStudio() {
             <div className="flex-1 flex overflow-hidden">
                 {/* SIDEBAR */}
                 <aside className="w-96 bg-white border-r border-slate-200 overflow-y-auto z-10 shadow-sm">
-                    <Accordion type="multiple" defaultValue={['content']} className="w-full">
+                    <Accordion type="multiple" defaultValue={['content', 'design']} className="w-full">
 
                         {/* CONTENT */}
                         <AccordionItem value="content" className="border-b border-slate-100">
@@ -376,31 +362,36 @@ export default function ColoringBookStudio() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        {/* BULK IMAGES (Optional now) */}
-                        <AccordionItem value="images" className="border-b border-slate-100">
+                        {/* DESIGN */}
+                        <AccordionItem value="design" className="border-b border-slate-100">
                             <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                                        <ImageIcon className="h-5 w-5 text-blue-600" />
+                                    <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center">
+                                        <Palette className="h-5 w-5 text-pink-500" />
                                     </div>
-                                    <span className="font-bold text-slate-800">Bulk Illustrations</span>
+                                    <span className="font-bold text-slate-800">Design & Template</span>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="px-8 pb-6 space-y-4">
-                                <p className="text-sm text-slate-600">Auto-match images by filename.</p>
-                                <Button
-                                    variant="outline"
-                                    className="w-full border-slate-200 h-10"
-                                    onClick={() => bulkInputRef.current?.click()}
-                                >
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    Bulk Upload Matches
-                                </Button>
+                                <div className="space-y-3">
+                                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Template Style</Label>
+                                    <select
+                                        value={project.template.id}
+                                        onChange={(e) => setProject({ ...project, template: BUILT_IN_TEMPLATES.find(t => t.id === e.target.value)! })}
+                                        className="w-full p-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none smooth-transition"
+                                    >
+                                        {BUILT_IN_TEMPLATES.map(t => (
+                                            <option key={t.id} value={t.id}>{t.name} ({t.fontFamily})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-500">
+                                    <p>Selected Format: {project.template.description}</p>
+                                </div>
                             </AccordionContent>
                         </AccordionItem>
 
-                        {/* DESIGN & PRINTING */}
-                        {/* Kept simple for now as user focused on images */}
+                        {/* PRINTING (Collapsed default) */}
                         <AccordionItem value="printing" className="border-b border-slate-100">
                             <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
                                 <div className="flex items-center gap-3">
@@ -439,14 +430,17 @@ export default function ColoringBookStudio() {
                     <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-10">
                         <div className="flex items-center gap-2">
                             <Button size="icon" variant="ghost" onClick={() => setCurrentSpread(Math.max(0, currentSpread - 1))}>
-                                <ChevronLeft className="h-5 w-5" />
+                                <ChevronLeft className="h-5 w-5 text-slate-600" />
                             </Button>
                             <span className="text-sm font-mono font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded">
                                 Spread {currentSpread + 1} / {totalSpreads}
                             </span>
                             <Button size="icon" variant="ghost" onClick={() => setCurrentSpread(Math.min(totalSpreads - 1, currentSpread + 1))}>
-                                <ChevronRight className="h-5 w-5" />
+                                <ChevronRight className="h-5 w-5 text-slate-600" />
                             </Button>
+                        </div>
+                        <div className="text-xs text-slate-400 font-mono">
+                            {project.config.trimSize} • {project.template.name}
                         </div>
                     </div>
 
@@ -458,10 +452,10 @@ export default function ColoringBookStudio() {
                                 <div className="bg-white flex flex-col p-8 overflow-hidden relative" style={{ width: '400px', aspectRatio: project.config.trimSize.replace('x', '/') }}>
                                     {currentSpread > 0 && currentSpread - 1 < project.stories.length ? (
                                         <>
-                                            <h2 className="text-xl font-bold mb-4 text-center" style={{ fontFamily: fontFamilyStyle }}>
+                                            <h2 className="text-xl font-bold mb-4 text-center text-slate-900" style={{ fontFamily: fontFamilyStyle }}>
                                                 {project.stories[currentSpread - 1].title}
                                             </h2>
-                                            <div className="whitespace-pre-wrap text-sm leading-relaxed mb-8 flex-1" style={{ fontFamily: fontFamilyStyle }}>
+                                            <div className="whitespace-pre-wrap text-sm leading-relaxed mb-8 flex-1 text-slate-900" style={{ fontFamily: fontFamilyStyle }}>
                                                 {project.stories[currentSpread - 1].story_text}
                                             </div>
                                             <div className="mt-auto border-t border-dashed border-slate-200 pt-4">
@@ -478,7 +472,7 @@ export default function ColoringBookStudio() {
                                     ) : currentSpread === 0 ? (
                                         <div className="flex items-center justify-center h-full flex-col">
                                             <Sparkles className="h-12 w-12 text-indigo-500 mb-4" />
-                                            <h1 className="text-2xl font-black text-center">{project.title}</h1>
+                                            <h1 className="text-2xl font-bold text-center text-slate-900" style={{ fontFamily: fontFamilyStyle }}>{project.title}</h1>
                                         </div>
                                     ) : null}
                                 </div>
