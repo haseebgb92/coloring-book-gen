@@ -146,22 +146,30 @@ async function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState)
     currentY += 40;
 
     // Story Text
-    pdf.setFontSize(14);
-    const lines = pdf.splitTextToSize(story.story_text, contentW - 40);
-    pdf.text(lines, w / 2, currentY, { align: 'center' });
-    currentY += (lines.length * 20) + 40;
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(12);
+    const maxWidth = contentW - 60;
+    const lines = pdf.splitTextToSize(story.story_text, maxWidth);
+    pdf.text(lines, w / 2, currentY, { align: 'center', lineHeightFactor: 1.5 });
+    currentY += (lines.length * 12 * 1.5) + 30;
 
     // Writing Words (DOTTED)
     pdf.setFont("RalewayDots", "normal");
-    pdf.setFontSize(42); // Large for tracing
+    pdf.setFontSize(44); // Large for tracing
 
-    story.writing_words.forEach(word => {
-        pdf.setDrawColor(240);
+    const practiceWords = story.writing_words.slice(0, 5);
+    practiceWords.forEach(word => {
+        pdf.setDrawColor(230);
         pdf.setLineWidth(0.5);
-        pdf.line(marginLeft + 40, currentY + 10, w - marginRight - 40, currentY + 10);
+        pdf.line(marginLeft + 40, currentY + 12, w - marginRight - 40, currentY + 12);
+
+        pdf.setTextColor(180); // Gray for tracing
         pdf.text(word, w / 2, currentY, { align: 'center' });
-        currentY += 60;
+        currentY += 65;
     });
+
+    pdf.setTextColor(0);
+    pdf.setFont("helvetica", "normal");
 
     pdf.setFont("helvetica", "normal");
 

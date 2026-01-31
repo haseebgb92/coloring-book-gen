@@ -26,6 +26,44 @@ body {
   font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  /* Main container will handle scrolling */
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: var(--background);
+}
+
+.sidebar {
+  width: 320px;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+[data-theme='dark'] .sidebar {
+  background: #1e1e1e;
+}
+
+.main-content {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  padding: 2rem;
+  background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme='dark'] .main-content {
+  background: #121212;
 }
 
 .premium-card {
@@ -145,6 +183,73 @@ body {
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+/* Book Spread Styles */
+.book-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  align-items: center;
+  padding-bottom: 5rem;
+}
+
+.spread {
+  display: flex;
+  gap: 4px;
   background: #ccc;
+  padding: 2px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  transition: transform 0.3s ease;
+}
+
+.page {
+  background: white;
+  width: 400px;
+  /* Responsive aspect ratio will be used */
+  aspect-ratio: var(--aspect-ratio, 8.5 / 11);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.02);
+}
+
+.page-left {
+  border-radius: 4px 0 0 4px;
+}
+
+.page-right {
+  border-radius: 0 4px 4px 0;
+}
+
+.page-content {
+  padding: 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: #333;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 600px;
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme='dark'] .modal-content {
+  background: #1e1e1e;
+  border: 1px solid #333;
 }
