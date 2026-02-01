@@ -45,7 +45,7 @@ export default function ColoringBookStudio() {
         config: KDP_PRESETS['8.5x11'],
         stories: [],
         template: BUILT_IN_TEMPLATES[0],
-        frontMatter: ['title-page', 'copyright', 'this-book-belongs-to'],
+        frontMatter: ['title-page', 'copyright', 'this-book-belongs-to', 'color-test'], // Added color-test explicitly
         endMatter: ['certificate'],
     });
 
@@ -60,6 +60,7 @@ export default function ColoringBookStudio() {
     // File inputs
     const bulkInputRef = useRef<HTMLInputElement>(null);
     const singleInputRef = useRef<HTMLInputElement>(null);
+    const logoInputRef = useRef<HTMLInputElement>(null); // NEW: Logo input
     const [attachingToId, setAttachingToId] = useState<number | null>(null);
 
     // Manage illustrations mapping: { storyIndex: dataUrl }
@@ -169,6 +170,17 @@ export default function ColoringBookStudio() {
         e.target.value = '';
     };
 
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setProject(p => ({ ...p, logo: ev.target?.result as string }));
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
     const removeImage = (e: React.MouseEvent, index: number) => {
         e.stopPropagation();
         const newIll = { ...illustrations };
@@ -222,6 +234,13 @@ export default function ColoringBookStudio() {
                 className="hidden"
                 onChange={handleManualUpload}
             />
+            <input
+                type="file"
+                accept="image/*"
+                ref={logoInputRef}
+                className="hidden"
+                onChange={handleLogoUpload}
+            />
 
             {/* HEADER */}
             <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 relative overflow-hidden shadow-sm z-20">
@@ -264,7 +283,7 @@ export default function ColoringBookStudio() {
             <div className="flex-1 flex overflow-hidden">
                 {/* SIDEBAR */}
                 <aside className="w-96 bg-white border-r border-slate-200 overflow-y-auto z-10 shadow-sm">
-                    <Accordion type="multiple" defaultValue={['content', 'design']} className="w-full">
+                    <Accordion type="multiple" defaultValue={['content', 'structure']} className="w-full">
 
                         {/* CONTENT */}
                         <AccordionItem value="content" className="border-b border-slate-100">
@@ -394,14 +413,35 @@ export default function ColoringBookStudio() {
                             <AccordionContent className="px-8 pb-6 space-y-4">
                                 <div className="space-y-4">
                                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Front Matter</Label>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <input type="checkbox"
-                                                checked={project.frontMatter.includes('title-page')}
-                                                onChange={() => togglePage('front', 'title-page')}
-                                                className="rounded border-slate-300 text-indigo-600" />
-                                            <span className="text-sm">Title Page</span>
+                                    <div className="space-y-3">
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <input type="checkbox"
+                                                    checked={project.frontMatter.includes('title-page')}
+                                                    onChange={() => togglePage('front', 'title-page')}
+                                                    className="rounded border-slate-300 text-indigo-600" />
+                                                <span className="text-sm font-medium">Title Page</span>
+                                            </div>
+                                            {/* Logo Upload (Only if Title Page checked) */}
+                                            {project.frontMatter.includes('title-page') && (
+                                                <div className="pl-6">
+                                                    {project.logo ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className="text-xs font-normal text-slate-500">Logo Attached</Badge>
+                                                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setProject({ ...project, logo: undefined })}>
+                                                                <X className="h-3 w-3 text-red-500" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => logoInputRef.current?.click()}>
+                                                            <Upload className="h-3 w-3 mr-2" />
+                                                            Upload Logo
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
+
                                         <div className="flex items-center gap-2">
                                             <input type="checkbox"
                                                 checked={project.frontMatter.includes('copyright')}
@@ -415,6 +455,13 @@ export default function ColoringBookStudio() {
                                                 onChange={() => togglePage('front', 'this-book-belongs-to')}
                                                 className="rounded border-slate-300 text-indigo-600" />
                                             <span className="text-sm">"This Book Belongs To" Page</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox"
+                                                checked={project.frontMatter.includes('color-test')}
+                                                onChange={() => togglePage('front', 'color-test')}
+                                                className="rounded border-slate-300 text-indigo-600" />
+                                            <span className="text-sm font-bold text-indigo-700">Test Colors Page</span>
                                         </div>
                                     </div>
                                 </div>
@@ -520,7 +567,7 @@ export default function ColoringBookStudio() {
                         {project.stories.length > 0 ? (
                             <div className="flex bg-slate-800 p-1 shadow-2xl rounded-sm">
 
-                                {/* LEFT: STORY */}
+                                {/* LEFT: BLANK OR STORY */}
                                 <div className="bg-white flex flex-col p-8 overflow-hidden relative" style={{ width: '400px', aspectRatio: project.config.trimSize.replace('x', '/') }}>
                                     {currentSpread > 0 && currentSpread - 1 < project.stories.length ? (
                                         <>
@@ -542,15 +589,15 @@ export default function ColoringBookStudio() {
                                             </div>
                                         </>
                                     ) : currentSpread === 0 ? (
-                                        <div className="flex items-center justify-center h-full flex-col p-8 text-center">
-                                            <Sparkles className="h-12 w-12 text-indigo-500 mb-4" />
-                                            <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: fontFamilyStyle }}>{project.title}</h1>
-                                            <div className="mt-4 text-xs text-slate-400">Title Page Preview</div>
+                                        <div className="flex items-center justify-center h-full text-center">
+                                            <div className="text-slate-300 text-xs uppercase tracking-widest">
+                                                Inside Cover / Blank
+                                            </div>
                                         </div>
                                     ) : null}
                                 </div>
 
-                                {/* RIGHT: ILLUSTRATION */}
+                                {/* RIGHT: TITLE OR ILLUSTRATION */}
                                 <div className="bg-white flex items-center justify-center relative" style={{ width: '400px', aspectRatio: project.config.trimSize.replace('x', '/') }}>
                                     {currentSpread > 0 && currentSpread - 1 < project.stories.length ? (
                                         <div className="border-[3px] border-slate-900 w-[85%] h-[85%] flex items-center justify-center p-2">
@@ -564,10 +611,13 @@ export default function ColoringBookStudio() {
                                             )}
                                         </div>
                                     ) : currentSpread === 0 ? (
-                                        <div className="flex items-center justify-center h-full text-center">
-                                            <div className="text-slate-300 text-xs uppercase tracking-widest">
-                                                Inside Cover / Blank
-                                            </div>
+                                        <div className="flex items-center justify-center h-full flex-col p-8 text-center w-full relative">
+                                            {project.logo && (
+                                                <img src={project.logo} className="h-32 mb-6 object-contain" alt="Project Logo" />
+                                            )}
+                                            <Sparkles className="h-8 w-8 text-indigo-500 mb-4 mx-auto" />
+                                            <h1 className="text-3xl font-bold text-slate-900 break-words w-full" style={{ fontFamily: fontFamilyStyle }}>{project.title}</h1>
+                                            <div className="mt-6 text-xs text-slate-400">Title Page Preview</div>
                                         </div>
                                     ) : null}
                                 </div>

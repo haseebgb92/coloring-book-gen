@@ -38,4 +38,5 @@ export interface ProjectState {
     template: Template;
     frontMatter: string[];
     endMatter: string[];
+    logo?: string; // Data URL for the title page logo
 }

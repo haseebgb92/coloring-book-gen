@@ -37,7 +37,6 @@ export async function generateColoringBookPDF(
             const filename = `${templateFontName.replace(/\s+/g, '')}.ttf`;
 
             pdf.addFileToVFS(filename, base64);
-            // CRITICAL FIX: Use 'Identity-H' for correct Unicode mapping of custom fonts
             pdf.addFont(filename, templateFontName, 'normal');
             activeFont = templateFontName;
         } catch (e) {
@@ -63,20 +62,13 @@ export async function generateColoringBookPDF(
     // Add front matter
     for (const matter of project.frontMatter) {
         pdf.addPage();
-        addFrontMatterPage(pdf, matter, project, activeFont);
+        await addFrontMatterPage(pdf, matter, project, activeFont); // Await for logo/images
         updateProgress();
     }
 
     // Ensure stories start on LEFT page (even page number)
     let pageNum = pdf.getNumberOfPages();
-    // We want the Story spread to start on a LEFT page (Even).
-    // Current count | Type | Next Page needs to be
-    // 1 (Odd)       | Right| Left (Even) -> OK
-    // 2 (Even)      | Left | Right (Odd) -> Need spacer to get to Left
-
     if (pageNum % 2 === 0) {
-        // Last page was Left. Next available is Right.
-        // We want to start on Left. So add a blank Right page.
         pdf.addPage();
         updateProgress();
     }
@@ -97,34 +89,126 @@ export async function generateColoringBookPDF(
     // Add end matter
     for (const matter of project.endMatter) {
         pdf.addPage();
-        addEndMatterPage(pdf, matter, project, activeFont);
+        await addFrontMatterPage(pdf, matter, project, activeFont); // Re-use front matter logic for end matter generic pages, or custom
         updateProgress();
     }
 
     return pdf.output('blob');
 }
 
-function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectState, fontName: string) {
+async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectState, fontName: string) {
     const { width, height } = getPageDimensions(project.config);
     const w = width * INCHES_TO_POINTS;
     const h = height * INCHES_TO_POINTS;
 
-    pdf.setFont(fontName, 'normal');
-    pdf.setFontSize(24);
+    // Set default font
+    try { pdf.setFont(fontName, 'normal'); } catch { pdf.setFont('helvetica', 'normal'); }
+    pdf.setTextColor(0);
 
-    let text = type.replace(/-/g, ' ').toUpperCase();
     if (type === 'title-page') {
-        text = project.title;
-        pdf.setFontSize(32);
-    } else if (type === 'this-book-belongs-to') {
-        text = "This Book Belongs To:\n\n_________________________";
-        pdf.setFontSize(18);
-    } else if (type === 'copyright') {
-        text = `Copyright © ${new Date().getFullYear()} ${project.title}\nAll Rights Reserved.`;
-        pdf.setFontSize(12);
-    }
+        let currentY = h / 2;
 
-    pdf.text(text, w / 2, h / 2, { align: 'center', lineHeightFactor: 1.5 });
+        // Logo Logic
+        if (project.logo) {
+            try {
+                const imgProps = pdf.getImageProperties(project.logo);
+                const imgRatio = imgProps.width / imgProps.height;
+                // Limit logo to 40% of page width max
+                const maxLogoW = w * 0.4;
+                const maxLogoH = h * 0.3;
+
+                let logoW = maxLogoW;
+                let logoH = maxLogoW / imgRatio;
+
+                if (logoH > maxLogoH) {
+                    logoH = maxLogoH;
+                    logoW = logoH * imgRatio;
+                }
+
+                // Draw Logo centered above center
+                pdf.addImage(project.logo, 'PNG', (w - logoW) / 2 / INCHES_TO_POINTS, (h / 2 - logoH - 30) / INCHES_TO_POINTS, logoW / INCHES_TO_POINTS, logoH / INCHES_TO_POINTS);
+                currentY = h / 2 + 20; // Move title down
+            } catch (e) {
+                console.warn("Failed to render logo", e);
+            }
+        }
+
+        pdf.setFontSize(32);
+        pdf.text(project.title, w / 2, currentY, { align: 'center', lineHeightFactor: 1.5 });
+
+        pdf.setFontSize(14);
+        pdf.text("A Story-Based Coloring Book", w / 2, currentY + 30, { align: 'center' });
+
+    } else if (type === 'this-book-belongs-to') {
+        pdf.setFontSize(18);
+        pdf.text("This Book Belongs To:", w / 2, h / 3, { align: 'center' });
+
+        pdf.setLineWidth(1);
+        pdf.line(w * 0.2, h / 2, w * 0.8, h / 2);
+
+    } else if (type === 'copyright') {
+        pdf.setFontSize(12);
+        const text = `Copyright © ${new Date().getFullYear()} ${project.title}\nAll Rights Reserved.`;
+        pdf.text(text, w / 2, h / 2, { align: 'center', lineHeightFactor: 1.5 });
+
+    } else if (type === 'color-test') {
+        // Color Test Page
+        pdf.setFontSize(24);
+        pdf.text("Test Your Colors", w / 2, h * 0.15, { align: 'center' });
+
+        pdf.setFontSize(12);
+        pdf.text("Pick your favorite colors and test them in the boxes below!", w / 2, h * 0.2, { align: 'center' });
+
+        // Draw Swatches
+        const boxSize = 80;
+        const gap = 40;
+        const startX = (w - (boxSize * 3 + gap * 2)) / 2;
+        const startY = h * 0.35;
+
+        const labels = ["Crayons", "Pencils", "Markers"];
+
+        labels.forEach((label, i) => {
+            const x = startX + i * (boxSize + gap);
+
+            // Box
+            pdf.setDrawColor(0);
+            pdf.setLineWidth(2);
+            pdf.rect(x, startY, boxSize, boxSize);
+
+            // Label
+            pdf.setFontSize(14);
+            pdf.text(label, x + boxSize / 2, startY + boxSize + 20, { align: 'center' });
+        });
+
+        // Guidance / Warning
+        pdf.setFontSize(11);
+        pdf.setTextColor(100);
+        const tips = "TIP: Use the medium that works best for you! If you use markers, please place a protective sheet behind this page to prevent bleed-through.";
+        const tipsLines = pdf.splitTextToSize(tips, w * 0.7);
+        pdf.text(tipsLines, w / 2, h * 0.7, { align: 'center', lineHeightFactor: 1.5 });
+
+        pdf.setTextColor(0); // Reset
+
+    } else if (type === 'certificate') {
+        // Certificate Logic (re-used)
+        const margin = 40;
+        pdf.setDrawColor(0);
+        pdf.setLineWidth(4);
+        pdf.rect(margin, margin, w - margin * 2, h - margin * 2);
+
+        pdf.setFontSize(32);
+        pdf.text("CERTIFICATE", w / 2, h / 3, { align: 'center' });
+        pdf.setFontSize(16);
+        pdf.text("Of Completion", w / 2, h / 3 + 30, { align: 'center' });
+
+        pdf.text("This certifies that", w / 2, h / 2, { align: 'center' });
+        pdf.line(w / 4, h / 2 + 40, w * 0.75, h / 2 + 40); // line
+
+        pdf.text("Has completed this coloring book!", w / 2, h * 0.7, { align: 'center' });
+    } else {
+        pdf.setFontSize(18);
+        pdf.text(type.replace(/-/g, ' ').toUpperCase(), w / 2, h / 2, { align: 'center' });
+    }
 }
 
 async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectState) {
@@ -218,7 +302,6 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
             currentY += fontSize;
             return;
         }
-        // Safety check for text width calculation failure
         try {
             const lines = pdf.splitTextToSize(para, contentWidth);
             pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
@@ -229,7 +312,6 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
             const lines = pdf.splitTextToSize(para, contentWidth);
             pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
             currentY += lines.length * fontSize * 1.5 + fontSize;
-            // Revert font setup
             try { pdf.setFont(fontName, 'normal'); } catch { }
         }
     });
@@ -267,35 +349,7 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     });
 }
 
-function addEndMatterPage(pdf: jsPDF, type: string, project: ProjectState, fontName: string) {
-    const { width, height } = getPageDimensions(project.config);
-    const w = width * INCHES_TO_POINTS;
-    const h = height * INCHES_TO_POINTS;
-
-    try {
-        pdf.setFont(fontName, 'normal');
-    } catch {
-        pdf.setFont('helvetica', 'normal');
-    }
-    pdf.setFontSize(18);
-
-    if (type === 'certificate') {
-        // Draw a fancy border
-        const margin = 40;
-        pdf.setDrawColor(0);
-        pdf.setLineWidth(4);
-        pdf.rect(margin, margin, w - margin * 2, h - margin * 2);
-
-        pdf.setFontSize(32);
-        pdf.text("CERTIFICATE", w / 2, h / 3, { align: 'center' });
-        pdf.setFontSize(16);
-        pdf.text("Of Completion", w / 2, h / 3 + 30, { align: 'center' });
-
-        pdf.text("This certifies that", w / 2, h / 2, { align: 'center' });
-        pdf.line(w / 4, h / 2 + 40, w * 0.75, h / 2 + 40); // line
-
-        pdf.text("Has completed this coloring book!", w / 2, h * 0.7, { align: 'center' });
-    } else {
-        pdf.text(type.toUpperCase(), w / 2, h / 2, { align: 'center' });
-    }
+// Helper to keep End Matter consistent
+async function addEndMatterPage(pdf: jsPDF, type: string, project: ProjectState, fontName: string) {
+    await addFrontMatterPage(pdf, type, project, fontName);
 }
