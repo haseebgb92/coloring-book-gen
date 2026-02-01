@@ -4,13 +4,10 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { useProjectStore } from '@/lib/store';
 import { BookDocument } from '../pdf/BookDocument';
+import { LivePreview } from './LivePreview';
 import { Download } from 'lucide-react';
 
 // Use dynamic imports to avoid SSR issues with react-pdf
-const PDFViewer = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFViewer), {
-    ssr: false,
-    loading: () => <div className="flex items-center justify-center h-full text-gray-400">Loading PDF engine...</div>
-});
 
 const PDFDownloadLink = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFDownloadLink), {
     ssr: false,
@@ -56,9 +53,7 @@ export function PreviewPane() {
                 </div>
             </div>
             <div className="flex-1 bg-gray-500 rounded-b-lg overflow-hidden shadow-lg relative border border-gray-300">
-                <PDFViewer width="100%" height="100%" showToolbar={true} className="border-0">
-                    <BookDocument state={projectState} />
-                </PDFViewer>
+                <LivePreview state={projectState} />
             </div>
         </div>
     );

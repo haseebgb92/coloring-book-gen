@@ -4,19 +4,19 @@ import { ProjectState, Scene } from '@/lib/types';
 
 // Register Fonts
 // Using Google Fonts URLs. In production these should be downloaded or robustly handled.
-Font.register({
-    family: 'Inter',
-    src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff'
-});
-Font.register({
-    family: 'Schoolbell', // Handwriting style for tracing? Or just dotted.
-    src: 'https://fonts.gstatic.com/s/schoolbell/v22/P_V12m4o84jO4eAs9zVl8w.woff2'
-});
-// Using a dotted font for tracing if possible, or just light color
-Font.register({
-    family: 'Codystar',
-    src: 'https://fonts.gstatic.com/s/codystar/v18/FwZf7-Q1xW8sOse7bkF-4E_y.woff2'
-});
+// Font.register({
+//     family: 'Inter',
+//     src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff'
+// });
+// Font.register({
+//     family: 'Schoolbell', // Handwriting style for tracing? Or just dotted.
+//     src: 'https://fonts.gstatic.com/s/schoolbell/v22/P_V12m4o84jO4eAs9zVl8w.woff2'
+// });
+// // Using a dotted font for tracing if possible, or just light color
+// Font.register({
+//     family: 'Codystar',
+//     src: 'https://fonts.gstatic.com/s/codystar/v18/FwZf7-Q1xW8sOse7bkF-4E_y.woff2'
+// });
 
 const PT_PER_INCH = 72;
 
@@ -75,7 +75,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const styles = StyleSheet.create({
         page: {
             backgroundColor: template.colors.background,
-            fontFamily: 'Inter',
+            fontFamily: 'Helvetica',
         },
         text: {
             color: template.colors.storyText,
@@ -86,7 +86,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
             color: template.colors.heading,
             fontSize: 24,
             marginBottom: 20,
-            fontFamily: 'Inter',
+            fontFamily: 'Helvetica',
             fontWeight: 'bold',
         },
         practiceRow: {
@@ -96,7 +96,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
         practiceWord: {
             fontSize: 28, // tracing size
             color: template.colors.tracing,
-            fontFamily: 'Codystar', // Dotted font
+            fontFamily: 'Courier', // Dotted font replacement
             marginRight: 15,
         },
         writingLine: {
