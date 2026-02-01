@@ -47,17 +47,17 @@ export function BookDocument({ state }: { state: ProjectState }) {
     // Safe Value Helpers
     const getNum = (val: any, fallback: number) => {
         const n = Number(val);
-        return (typeof val === 'number' || typeof val === 'string') && !isNaN(n) ? Math.max(0, n) : fallback;
+        return (typeof val === 'number' || typeof val === 'string') && !isNaN(n) ? n : fallback;
     };
 
     const safeMargins = {
-        top: getNum(margins?.top, 0.5),
-        bottom: getNum(margins?.bottom, 0.5),
-        inner: getNum(margins?.inner, 0.5),
-        outer: getNum(margins?.outer, 0.5),
+        top: Math.max(0, getNum(margins?.top, 0.5)),
+        bottom: Math.max(0, getNum(margins?.bottom, 0.5)),
+        inner: Math.max(0, getNum(margins?.inner, 0.5)),
+        outer: Math.max(0, getNum(margins?.outer, 0.5)),
     };
 
-    const safeCornerRadius = getNum(layout?.cornerRadius, 0);
+    const safeCornerRadius = Math.max(0, getNum(layout?.cornerRadius, 0));
     const borderWeight = (layout?.borderStyle && layout?.borderStyle !== 'none') ? 2 : 0;
 
     const marginTop = (safeMargins.top * PT_PER_INCH) + bleedPt;
@@ -67,18 +67,18 @@ export function BookDocument({ state }: { state: ProjectState }) {
 
     // Helper for margins based on page side
     const getMargins = (side: 'left' | 'right') => {
-        const top = (safeMargins.top * PT_PER_INCH) + bleedPt;
-        const bottom = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
+        const t = (safeMargins.top * PT_PER_INCH) + bleedPt;
+        const b = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
 
         if (side === 'left') {
             return {
-                top, bottom,
+                top: t, bottom: b,
                 left: (safeMargins.outer * PT_PER_INCH) + bleedPt,
                 right: (safeMargins.inner * PT_PER_INCH)
             };
         } else {
             return {
-                top, bottom,
+                top: t, bottom: b,
                 left: (safeMargins.inner * PT_PER_INCH),
                 right: (safeMargins.outer * PT_PER_INCH) + bleedPt
             };
@@ -119,17 +119,6 @@ export function BookDocument({ state }: { state: ProjectState }) {
             position: 'absolute',
             left: 0, right: 0,
             height: 1,
-        },
-        illustrationFrame: {
-            width: '100%',
-            height: '100%',
-            borderWidth: borderWeight,
-            borderColor: colors.border || '#000000',
-            borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
-            borderRadius: safeCornerRadius,
-            overflow: 'hidden',
-            backgroundColor: '#ffffff',
-            position: 'relative'
         }
     });
 
@@ -196,7 +185,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                                 )}
 
                                                 <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 0 }}>
-                                                    {Array.from({ length: Math.max(1, writingSettings.minRepetitions || 0) }).map((_, rIdx) => (
+                                                    {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
                                                         <Text key={rIdx} style={styles.practiceWord}>
                                                             {word || ''}
                                                         </Text>
@@ -212,7 +201,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                             {printSettings.pageNumbers.enabled && (
                                 <Text style={{
                                     position: 'absolute',
-                                    bottom: Number(20),
+                                    bottom: 20,
                                     left: 0, right: 0,
                                     textAlign: 'center',
                                     color: colors.pageNumber || '#000000',
@@ -234,7 +223,17 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 justifyContent: 'center',
                                 alignItems: 'center'
                             }}>
-                                <View style={styles.illustrationFrame}>
+                                <View style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    borderWidth: borderWeight,
+                                    borderColor: colors.border || '#000000',
+                                    borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
+                                    ...(safeCornerRadius > 0 ? { borderRadius: safeCornerRadius } : {}),
+                                    overflow: 'hidden',
+                                    backgroundColor: '#ffffff',
+                                    position: 'relative'
+                                }}>
                                     {scene.illustration && (scene.illustration.startsWith('data:') || scene.illustration.startsWith('http') || scene.illustration.startsWith('blob:')) ? (
                                         <Image
                                             src={scene.illustration}
@@ -261,7 +260,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                             {printSettings.pageNumbers.enabled && (
                                 <Text style={{
                                     position: 'absolute',
-                                    bottom: Number(20),
+                                    bottom: 20,
                                     left: 0, right: 0,
                                     textAlign: 'center',
                                     color: colors.pageNumber || '#000000',
