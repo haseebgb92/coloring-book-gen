@@ -110,15 +110,39 @@ export function BookDocument({ state }: { state: ProjectState }) {
     });
 
     return (
-        <Document>
-            {/* TODO: Front Matter */}
+        <Document title={state.name || 'Coloring Book'}>
+            {/* Front Matter Pages */}
+            {(state.frontMatter || []).map((page, idx) => (
+                <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
+                    <View style={{
+                        marginTop: marginTop,
+                        marginBottom: marginBottom,
+                        marginLeft: marginLeft,
+                        marginRight: marginRight,
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                    }}>
+                        {page.title && <Text style={[styles.heading, { textAlign: 'center' }]}>{page.title}</Text>}
+                        {page.image && (
+                            <View style={{ width: '80%', height: '40%', marginBottom: 20 }}>
+                                <Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                            </View>
+                        )}
+                        {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
+                    </View>
+                </Page>
+            ))}
 
-            {scenes.map((scene, idx) => {
+            {/* Main Scenes */}
+            {(scenes || []).map((scene, idx) => {
                 const leftMargins = getMargins('left');
                 const rightMargins = getMargins('right');
 
+                if (!scene) return null;
+
                 return (
-                    <React.Fragment key={scene.id}>
+                    <React.Fragment key={scene.id || idx}>
                         {/* Left Page: Story + Words */}
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
                             <View style={{
@@ -128,32 +152,27 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 marginRight: leftMargins.right,
                                 flex: 1
                             }}>
-                                <Text style={styles.heading}>{scene.title}</Text>
-                                <Text style={styles.text}>{scene.story}</Text>
+                                {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
+                                {scene.story && <Text style={styles.text}>{scene.story}</Text>}
 
                                 <View style={{ marginTop: 30 }}>
-                                    {scene.words.map((word, wIdx) => (
+                                    {(scene.words || []).map((word, wIdx) => (
                                         <View key={wIdx} style={styles.practiceRow}>
-                                            {/* Writing Lines Background */}
                                             <View style={{ position: 'relative', height: 40, width: '100%', marginBottom: 5 }}>
-                                                {/* Top Line */}
                                                 {writingSettings.guidelines.showTop && (
                                                     <View style={[styles.writingLine, { top: 0, borderBottomColor: template.colors.writingLine }]} />
                                                 )}
-                                                {/* Mid Line (should be dashed) */}
                                                 {writingSettings.guidelines.showMid && (
                                                     <View style={[styles.writingLine, { top: 15, borderBottomStyle: 'dashed', borderBottomColor: template.colors.writingLine }]} />
                                                 )}
-                                                {/* Base Line */}
                                                 {writingSettings.guidelines.showBase && (
                                                     <View style={[styles.writingLine, { top: 30, borderBottomColor: template.colors.writingLine }]} />
                                                 )}
 
-                                                {/* The Words */}
                                                 <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 0 }}>
-                                                    {Array.from({ length: writingSettings.minRepetitions }).map((_, rIdx) => (
+                                                    {Array.from({ length: Math.max(1, writingSettings.minRepetitions || 0) }).map((_, rIdx) => (
                                                         <Text key={rIdx} style={styles.practiceWord}>
-                                                            {word}
+                                                            {word || ''}
                                                         </Text>
                                                     ))}
                                                 </View>
@@ -162,6 +181,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     ))}
                                 </View>
                             </View>
+
                             {/* Page Number */}
                             {printSettings.pageNumbers.enabled && (
                                 <Text style={{
@@ -169,17 +189,16 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     bottom: 20,
                                     left: 0, right: 0,
                                     textAlign: 'center',
-                                    color: template.colors.pageNumber,
+                                    color: template.colors.pageNumber || '#000',
                                     fontSize: 10
                                 }}>
-                                    {2 + (idx * 2)}
+                                    {2 + (state.frontMatter?.length || 0) + (idx * 2)}
                                 </Text>
                             )}
                         </Page>
 
                         {/* Right Page: Illustration */}
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
-                            {/* Bleed/Margins container */}
                             <View style={{
                                 marginTop: rightMargins.top,
                                 marginBottom: rightMargins.bottom,
@@ -189,14 +208,13 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 justifyContent: 'center',
                                 alignItems: 'center'
                             }}>
-                                {/* The Frame */}
                                 <View style={{
                                     width: '100%',
                                     height: '100%',
-                                    borderWidth: template.layout.borderStyle !== 'none' ? 2 : 0,
-                                    borderColor: template.colors.border,
+                                    borderWidth: (template.layout.borderStyle !== 'none' && template.layout.borderStyle) ? 2 : 0,
+                                    borderColor: template.colors.border || '#000',
                                     borderStyle: template.layout.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                    borderRadius: template.layout.cornerRadius,
+                                    borderRadius: template.layout.cornerRadius || 0,
                                     overflow: 'hidden',
                                     backgroundColor: '#ffffff',
                                     position: 'relative'
@@ -206,9 +224,6 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                             src={scene.illustration}
                                             style={{
                                                 position: 'absolute',
-                                                // Calculate base offset to center the scaled image
-                                                // Base offset = (1 - scale) / 2 * 100
-                                                // Then add user offset
                                                 top: `${((1 - (scene.illustrationScale || 1.05)) / 2 * 100) + (scene.illustrationPositionY || 0)}%`,
                                                 left: `${((1 - (scene.illustrationScale || 1.05)) / 2 * 100) + (scene.illustrationPositionX || 0)}%`,
                                                 width: `${(scene.illustrationScale || 1.05) * 100}%`,
@@ -231,16 +246,34 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     bottom: 20,
                                     left: 0, right: 0,
                                     textAlign: 'center',
-                                    color: template.colors.pageNumber,
+                                    color: template.colors.pageNumber || '#000',
                                     fontSize: 10
                                 }}>
-                                    {3 + (idx * 2)}
+                                    {3 + (state.frontMatter?.length || 0) + (idx * 2)}
                                 </Text>
                             )}
                         </Page>
                     </React.Fragment>
-                )
+                );
             })}
+
+            {/* Ending Pages */}
+            {(state.endingPages || []).map((page, idx) => (
+                <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
+                    <View style={{
+                        marginTop: marginTop,
+                        marginBottom: marginBottom,
+                        marginLeft: marginLeft,
+                        marginRight: marginRight,
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                    }}>
+                        {page.title && <Text style={[styles.heading, { textAlign: 'center' }]}>{page.title}</Text>}
+                        {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
+                    </View>
+                </Page>
+            ))}
         </Document>
     );
 }
