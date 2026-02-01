@@ -6,10 +6,19 @@ import { TEMPLATES, INITIAL_PROJECT_STATE } from '@/lib/templates';
 const PT_PER_INCH = 72;
 
 // Register Dotted Font for Tracing
-// Note: PDF renderer needs direct access to the font file.
 Font.register({
     family: 'Codystar',
-    src: 'https://fonts.gstatic.com/s/codystar/v18/FwZf7-Q1xW8sOse7bkF-4E_y.ttf'
+    src: 'https://github.com/google/fonts/raw/main/ofl/codystar/Codystar-Regular.ttf'
+});
+
+Font.register({
+    family: 'Fredoka',
+    src: 'https://github.com/google/fonts/raw/main/ofl/fredoka/Fredoka%5Bwdth%2Cwght%5D.ttf'
+});
+
+Font.register({
+    family: 'Outfit',
+    src: 'https://github.com/google/fonts/raw/main/ofl/outfit/Outfit%5Bwght%5D.ttf'
 });
 
 // Decorative Components for PDF
@@ -121,7 +130,9 @@ export function BookDocument({ state }: { state: ProjectState }) {
             color: colors.heading || '#000000',
             fontSize: layout.headingSize || 30,
             marginBottom: 20,
-            fontFamily: 'Helvetica-Bold',
+            fontFamily: (template.fonts.heading === 'Fredoka' || template.fonts.heading === 'Outfit')
+                ? template.fonts.heading
+                : 'Helvetica-Bold',
             textAlign: 'center'
         },
         practiceRow: {
@@ -200,40 +211,54 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 marginLeft: leftMargins.left,
                                 marginRight: leftMargins.right,
                                 flex: 1,
-                                alignItems: 'center'
+                                position: 'relative'
                             }}>
-                                {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
+                                {/* Story Frame */}
+                                <View style={{
+                                    position: 'absolute',
+                                    top: 0, left: 0, right: 0, bottom: 0,
+                                    borderWidth: borderWeight,
+                                    borderColor: colors.border || '#000000',
+                                    borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
+                                    ...(safeCornerRadius > 0 ? { borderRadius: safeCornerRadius } : {}),
+                                    backgroundColor: '#ffffff',
+                                    opacity: 0.5 // Subtle background for the content area
+                                }} />
 
-                                {layout.showIcon && <View style={{ height: 1, width: 80, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 20 }} />}
+                                <View style={{ flex: 1, padding: 20, alignItems: 'center' }}>
+                                    {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
 
-                                {scene.story && <Text style={[styles.text, { textAlign: 'center' }]}>{scene.story}</Text>}
+                                    {layout.showIcon && <View style={{ height: 1, width: 80, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 20 }} />}
 
-                                <View style={{ marginTop: 40, width: '100%' }}>
-                                    {(scene.words || []).map((word, wIdx) => (
-                                        <View key={wIdx} style={styles.practiceRow}>
-                                            <View style={{ position: 'relative', height: 45, width: '100%', marginBottom: 8 }}>
-                                                {writingSettings.guidelines.showTop && (
-                                                    <View style={[styles.writingLine, { top: 0, borderBottomColor: colors.writingLine }]} />
-                                                )}
-                                                {writingSettings.guidelines.showMid && (
-                                                    <View style={[styles.writingLine, { top: 22.5, borderBottomStyle: 'dashed', borderBottomColor: colors.writingLine }]} />
-                                                )}
-                                                {writingSettings.guidelines.showBase && (
-                                                    <View style={[styles.writingLine, { top: 45, borderBottomColor: colors.writingLine }]} />
-                                                )}
+                                    {scene.story && <Text style={[styles.text, { textAlign: 'center' }]}>{scene.story}</Text>}
 
-                                                <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 10 }}>
-                                                    {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
-                                                        <View key={rIdx} style={{ marginRight: 30 }}>
-                                                            <Text style={[styles.practiceWord, { color: colors.tracing, fontFamily: 'Codystar' }]}>
-                                                                {word || ''}
-                                                            </Text>
-                                                        </View>
-                                                    ))}
+                                    <View style={{ marginTop: 40, width: '100%' }}>
+                                        {(scene.words || []).map((word, wIdx) => (
+                                            <View key={wIdx} style={styles.practiceRow}>
+                                                <View style={{ position: 'relative', height: 45, width: '100%', marginBottom: 8 }}>
+                                                    {writingSettings.guidelines.showTop && (
+                                                        <View style={[styles.writingLine, { top: 0, borderBottomColor: colors.writingLine }]} />
+                                                    )}
+                                                    {writingSettings.guidelines.showMid && (
+                                                        <View style={[styles.writingLine, { top: 22.5, borderBottomStyle: 'dashed', borderBottomColor: colors.writingLine }]} />
+                                                    )}
+                                                    {writingSettings.guidelines.showBase && (
+                                                        <View style={[styles.writingLine, { top: 45, borderBottomColor: colors.writingLine }]} />
+                                                    )}
+
+                                                    <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 10 }}>
+                                                        {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
+                                                            <View key={rIdx} style={{ marginRight: 30 }}>
+                                                                <Text style={[styles.practiceWord, { color: colors.tracing, fontFamily: 'Codystar' }]}>
+                                                                    {word || ''}
+                                                                </Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
                                                 </View>
                                             </View>
-                                        </View>
-                                    ))}
+                                        ))}
+                                    </View>
                                 </View>
                             </View>
 

@@ -101,69 +101,79 @@ export function LivePreview({ state }: { state: ProjectState }) {
                         </>
                     )}
 
-                    <div className="w-full h-full flex flex-col items-center text-center" style={contentStyle}>
-                        <h1
-                            className="font-bold mb-4"
+                    <div className="w-full h-full flex flex-col pt-1" style={contentStyle}>
+                        <div
+                            className="flex-1 flex flex-col items-center text-center p-6"
                             style={{
-                                fontFamily: template.fonts.heading,
-                                color: template.colors.heading,
-                                fontSize: `${(layout.headingSize || 28) * scale}px`
+                                borderRadius: `${template.layout.cornerRadius}px`,
+                                border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
+                                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                position: 'relative'
                             }}
                         >
-                            {currentScene.title}
-                        </h1>
+                            <h1
+                                className="font-bold mb-4"
+                                style={{
+                                    fontFamily: template.fonts.heading,
+                                    color: template.colors.heading,
+                                    fontSize: `${(layout.headingSize || 28) * scale}px`
+                                }}
+                            >
+                                {currentScene.title}
+                            </h1>
 
-                        {layout.showIcon && <div className="h-px w-24 mb-6 opacity-30" style={{ backgroundColor: template.colors.accent }} />}
+                            {layout.showIcon && <div className="h-px w-24 mb-6 opacity-30" style={{ backgroundColor: template.colors.accent }} />}
 
-                        <p
-                            className="whitespace-pre-wrap mb-10"
-                            style={{
-                                fontFamily: template.fonts.body,
-                                color: template.colors.storyText,
-                                fontSize: `${(layout.bodySize || 14) * scale}px`,
-                                lineHeight: 1.6
-                            }}
-                        >
-                            {currentScene.story}
-                        </p>
+                            <p
+                                className="whitespace-pre-wrap mb-10"
+                                style={{
+                                    fontFamily: template.fonts.body,
+                                    color: template.colors.storyText,
+                                    fontSize: `${(layout.bodySize || 14) * scale}px`,
+                                    lineHeight: 1.6
+                                }}
+                            >
+                                {currentScene.story}
+                            </p>
 
-                        {/* Attributes/Words */}
-                        <div className="w-full space-y-4">
-                            {currentScene.words.map((word, idx) => (
-                                <div key={idx} className="relative h-14 w-full group">
-                                    {/* Guidelines */}
-                                    <div className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
-                                        {writingSettings.guidelines.showTop && (
-                                            <div className="absolute top-0 w-full border-t" style={{ borderColor: template.colors.writingLine }}></div>
-                                        )}
-                                        {writingSettings.guidelines.showMid && (
-                                            <div className="absolute top-[50%] w-full border-t border-dashed" style={{ borderColor: template.colors.writingLine }}></div>
-                                        )}
-                                        {writingSettings.guidelines.showBase && (
-                                            <div className="absolute bottom-0 w-full border-b" style={{ borderColor: template.colors.writingLine }}></div>
-                                        )}
+                            {/* Attributes/Words */}
+                            <div className="w-full space-y-4">
+                                {currentScene.words.map((word, idx) => (
+                                    <div key={idx} className="relative h-14 w-full group">
+                                        {/* Guidelines */}
+                                        <div className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
+                                            {writingSettings.guidelines.showTop && (
+                                                <div className="absolute top-0 w-full border-t" style={{ borderColor: template.colors.writingLine }}></div>
+                                            )}
+                                            {writingSettings.guidelines.showMid && (
+                                                <div className="absolute top-[50%] w-full border-t border-dashed" style={{ borderColor: template.colors.writingLine }}></div>
+                                            )}
+                                            {writingSettings.guidelines.showBase && (
+                                                <div className="absolute bottom-0 w-full border-b" style={{ borderColor: template.colors.writingLine }}></div>
+                                            )}
+                                        </div>
+
+                                        {/* Words */}
+                                        <div className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap px-4 bg-white/50 rounded pointer-events-none">
+                                            {Array.from({ length: Math.max(1, writingSettings.minRepetitions) }).map((_, rIdx) => (
+                                                <span
+                                                    key={rIdx}
+                                                    className="mr-12 select-none"
+                                                    style={{
+                                                        fontFamily: 'Codystar, cursive',
+                                                        fontSize: `${28 * scale}px`,
+                                                        color: template.colors.tracing,
+                                                        opacity: 0.9,
+                                                        fontWeight: 400
+                                                    }}
+                                                >
+                                                    {word}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
-
-                                    {/* Words */}
-                                    <div className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap px-4 bg-white/50 rounded pointer-events-none">
-                                        {Array.from({ length: Math.max(1, writingSettings.minRepetitions) }).map((_, rIdx) => (
-                                            <span
-                                                key={rIdx}
-                                                className="mr-12 select-none"
-                                                style={{
-                                                    fontFamily: 'Codystar, cursive',
-                                                    fontSize: `${28 * scale}px`,
-                                                    color: template.colors.tracing,
-                                                    opacity: 0.9,
-                                                    fontWeight: 400
-                                                }}
-                                            >
-                                                {word}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
 
