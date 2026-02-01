@@ -149,14 +149,13 @@ export function LivePreview({ state }: { state: ProjectState }) {
                                         {Array.from({ length: Math.max(1, writingSettings.minRepetitions) }).map((_, rIdx) => (
                                             <span
                                                 key={rIdx}
-                                                className="mr-12 select-none tracking-widest"
+                                                className="mr-12 select-none"
                                                 style={{
-                                                    fontFamily: '"Schoolbell", cursive',
+                                                    fontFamily: 'Codystar, cursive',
                                                     fontSize: `${28 * scale}px`,
                                                     color: template.colors.tracing,
-                                                    textDecoration: 'underline dotted',
-                                                    textUnderlineOffset: '4px',
-                                                    opacity: 0.9
+                                                    opacity: 0.9,
+                                                    fontWeight: 400
                                                 }}
                                             >
                                                 {word}

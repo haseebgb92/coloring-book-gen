@@ -5,6 +5,13 @@ import { TEMPLATES, INITIAL_PROJECT_STATE } from '@/lib/templates';
 
 const PT_PER_INCH = 72;
 
+// Register Dotted Font for Tracing
+// Note: PDF renderer needs direct access to the font file.
+Font.register({
+    family: 'Codystar',
+    src: 'https://fonts.gstatic.com/s/codystar/v18/FwZf7-Q1xW8sOse7bkF-4E_y.ttf'
+});
+
 // Decorative Components for PDF
 const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
     switch (type) {
@@ -124,7 +131,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
         practiceWord: {
             fontSize: 28,
             color: colors.tracing || '#9ca3af',
-            fontFamily: 'Courier',
+            fontFamily: 'Codystar',
             marginRight: 20,
         },
         writingLine: {
@@ -218,20 +225,9 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                                 <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 10 }}>
                                                     {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
                                                         <View key={rIdx} style={{ marginRight: 30 }}>
-                                                            <Text style={[styles.practiceWord, { color: colors.tracing }]}>
+                                                            <Text style={[styles.practiceWord, { color: colors.tracing, fontFamily: 'Codystar' }]}>
                                                                 {word || ''}
                                                             </Text>
-                                                            {/* Dotted underline hack if no font */}
-                                                            <View style={{
-                                                                position: 'absolute',
-                                                                bottom: -2,
-                                                                left: 0,
-                                                                right: 0,
-                                                                borderBottomWidth: 1,
-                                                                borderBottomColor: colors.tracing,
-                                                                borderBottomStyle: 'dashed',
-                                                                opacity: 0.5
-                                                            }} />
                                                         </View>
                                                     ))}
                                                 </View>
