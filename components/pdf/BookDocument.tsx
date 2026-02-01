@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
 import { ProjectState, Scene } from '@/lib/types';
+import { TEMPLATES, INITIAL_PROJECT_STATE } from '@/lib/templates';
 
 // Register Fonts
 // Using Google Fonts URLs. In production these should be downloaded or robustly handled.
@@ -21,8 +22,15 @@ import { ProjectState, Scene } from '@/lib/types';
 const PT_PER_INCH = 72;
 
 export function BookDocument({ state }: { state: ProjectState }) {
-    const { printSettings, scenes, template, writingSettings } = state;
+    // Sanitization and Defaults
+    const printSettings = state?.printSettings || INITIAL_PROJECT_STATE.printSettings;
+    const scenes = state?.scenes || [];
+    const template = state?.template || TEMPLATES[0];
+    const writingSettings = state?.writingSettings || INITIAL_PROJECT_STATE.writingSettings;
+
     const { trimSize, bleed, margins } = printSettings;
+    const colors = template?.colors || TEMPLATES[0].colors;
+    const layout = template?.layout || TEMPLATES[0].layout;
 
     // Calculate dimensions
     const [widthIn, heightIn] = trimSize === '6x9' ? [6, 9] :
@@ -36,54 +44,51 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const pageWidth = width + (bleed ? bleedPt * 2 : 0);
     const pageHeight = height + (bleed ? bleedPt * 2 : 0);
 
-    // Content Area
-    const marginTop = (margins.top * PT_PER_INCH) + bleedPt;
-    const marginBottom = (margins.bottom * PT_PER_INCH) + bleedPt;
-    const marginLeft = (margins.outer * PT_PER_INCH) + bleedPt; // Standard assumption: Left page outer is Left.
-    const marginRight = (margins.inner * PT_PER_INCH) + bleedPt;
+    // Safe Margin Access
+    const safeMargins = {
+        top: Number(margins?.top || 0.5),
+        bottom: Number(margins?.bottom || 0.5),
+        inner: Number(margins?.inner || 0.5),
+        outer: Number(margins?.outer || 0.5),
+    };
 
-    // For Right page (recto), Inner is Left, Outer is Right.
-    // Left Page (verso): Inner is Right, Outer is Left.
+    const marginTop = (safeMargins.top * PT_PER_INCH) + bleedPt;
+    const marginBottom = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
+    const marginLeft = (safeMargins.outer * PT_PER_INCH) + bleedPt;
+    const marginRight = (safeMargins.inner * PT_PER_INCH) + bleedPt;
 
     // Helper for margins based on page side
     const getMargins = (side: 'left' | 'right') => {
-        const top = (margins.top * PT_PER_INCH) + bleedPt;
-        const bottom = (margins.bottom * PT_PER_INCH) + bleedPt;
-        const inner = (margins.inner * PT_PER_INCH) + (state.printSettings.bleed ? 0 : 0); // Inner margin from trim edge
-        // If bleed is ON, do we add bleed to inner? Usually No, bleed is outer edges.
-        // But standard "inner" margin is safe area from spine.
-
-        // Let's stick to safe box.
-        // Left Page: Left=Outer+Bleed, Right=Inner.
-        // Right Page: Left=Inner, Right=Outer+Bleed.
+        const top = (safeMargins.top * PT_PER_INCH) + bleedPt;
+        const bottom = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
 
         if (side === 'left') {
             return {
                 top, bottom,
-                left: (margins.outer * PT_PER_INCH) + bleedPt,
-                right: (margins.inner * PT_PER_INCH)
+                left: (safeMargins.outer * PT_PER_INCH) + bleedPt,
+                right: (safeMargins.inner * PT_PER_INCH)
             };
         } else {
             return {
                 top, bottom,
-                left: (margins.inner * PT_PER_INCH),
-                right: (margins.outer * PT_PER_INCH) + bleedPt
+                left: (safeMargins.inner * PT_PER_INCH),
+                right: (safeMargins.outer * PT_PER_INCH) + bleedPt
             };
         }
     };
 
     const styles = StyleSheet.create({
         page: {
-            backgroundColor: template.colors.background,
+            backgroundColor: colors.background || '#ffffff',
             fontFamily: 'Helvetica',
         },
         text: {
-            color: template.colors.storyText,
-            fontSize: 12, // From template settings in future
+            color: colors.storyText || '#000000',
+            fontSize: 12,
             lineHeight: 1.5,
         },
         heading: {
-            color: template.colors.heading,
+            color: colors.heading || '#000000',
             fontSize: 24,
             marginBottom: 20,
             fontFamily: 'Helvetica',
@@ -94,20 +99,23 @@ export function BookDocument({ state }: { state: ProjectState }) {
             marginBottom: 10,
         },
         practiceWord: {
-            fontSize: 28, // tracing size
-            color: template.colors.tracing,
-            fontFamily: 'Courier', // Dotted font replacement
+            fontSize: 28,
+            color: colors.tracing || '#9ca3af',
+            fontFamily: 'Courier',
             marginRight: 15,
         },
         writingLine: {
             borderBottomWidth: 1,
-            borderBottomColor: template.colors.writingLine,
-            borderBottomStyle: 'solid', // No dashed support for borders in ReactPDF yet? It supports dotted/dashed.
+            borderBottomColor: colors.writingLine || '#e5e7eb',
+            borderBottomStyle: 'solid',
             position: 'absolute',
             left: 0, right: 0,
             height: 1,
         }
     });
+
+    const safeCornerRadius = typeof layout.cornerRadius === 'number' ? layout.cornerRadius : 0;
+    const borderWeight = (layout.borderStyle && layout.borderStyle !== 'none') ? 2 : 0;
 
     return (
         <Document title={state.name || 'Coloring Book'}>
@@ -162,13 +170,13 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                         <View key={wIdx} style={styles.practiceRow}>
                                             <View style={{ position: 'relative', height: 40, width: '100%', marginBottom: 5 }}>
                                                 {writingSettings.guidelines.showTop && (
-                                                    <View style={[styles.writingLine, { top: 0, borderBottomColor: template.colors.writingLine }]} />
+                                                    <View style={[styles.writingLine, { top: 0, borderBottomColor: colors.writingLine }]} />
                                                 )}
                                                 {writingSettings.guidelines.showMid && (
-                                                    <View style={[styles.writingLine, { top: 15, borderBottomStyle: 'dashed', borderBottomColor: template.colors.writingLine }]} />
+                                                    <View style={[styles.writingLine, { top: 15, borderBottomStyle: 'dashed', borderBottomColor: colors.writingLine }]} />
                                                 )}
                                                 {writingSettings.guidelines.showBase && (
-                                                    <View style={[styles.writingLine, { top: 30, borderBottomColor: template.colors.writingLine }]} />
+                                                    <View style={[styles.writingLine, { top: 30, borderBottomColor: colors.writingLine }]} />
                                                 )}
 
                                                 <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 0 }}>
@@ -191,7 +199,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     bottom: 20,
                                     left: 0, right: 0,
                                     textAlign: 'center',
-                                    color: template.colors.pageNumber || '#000',
+                                    color: colors.pageNumber || '#000',
                                     fontSize: 10
                                 }}>
                                     {2 + (state.frontMatter?.length || 0) + (idx * 2)}
@@ -213,10 +221,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 <View style={{
                                     width: '100%',
                                     height: '100%',
-                                    borderWidth: (template.layout.borderStyle !== 'none' && template.layout.borderStyle) ? 2 : 0,
-                                    borderColor: template.colors.border || '#000',
-                                    borderStyle: template.layout.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                    borderRadius: template.layout.cornerRadius || 0,
+                                    borderWidth: borderWeight,
+                                    borderColor: colors.border || '#000',
+                                    borderStyle: layout.borderStyle === 'dashed' ? 'dashed' : 'solid',
+                                    borderRadius: safeCornerRadius,
                                     overflow: 'hidden',
                                     backgroundColor: '#ffffff',
                                     position: 'relative'
@@ -250,7 +258,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     bottom: 20,
                                     left: 0, right: 0,
                                     textAlign: 'center',
-                                    color: template.colors.pageNumber || '#000',
+                                    color: colors.pageNumber || '#000',
                                     fontSize: 10
                                 }}>
                                     {3 + (state.frontMatter?.length || 0) + (idx * 2)}
