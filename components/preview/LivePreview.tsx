@@ -78,6 +78,20 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
                     style={pageStyle}
                 >
+                    {/* Visual Bleed Guide (Overlay) */}
+                    {printSettings.bleed && (
+                        <div className="absolute inset-0 pointer-events-none z-50 border border-red-400 border-dashed"
+                            style={{
+                                left: `${0.125 * 96 * scale}px`,
+                                top: `${0.125 * 96 * scale}px`,
+                                right: `${0.125 * 96 * scale}px`,
+                                bottom: `${0.125 * 96 * scale}px`,
+                            }}
+                        >
+                            <div className="absolute top-0 right-0 bg-red-500 text-white text-[8px] px-1">Safe Area Boundary</div>
+                        </div>
+                    )}
+
                     <div className="w-full h-full flex flex-col" style={contentStyle}>
                         <h1 className="text-2xl font-bold mb-4" style={{ fontFamily: template.fonts.heading, color: template.colors.heading }}>
                             {currentScene.title}

@@ -22,6 +22,8 @@ export function Sidebar({ className }: { className?: string }) {
     const setActiveSection = useProjectStore((state) => state.setActiveSection);
     const validationErrors = useProjectStore((state) => state.validationErrors);
 
+    /* Sync validation errors logic placeholder */
+
     const sections = [
         { id: 'project', label: 'Project', icon: Folder },
         { id: 'paste', label: 'Paste Scenes', icon: FileText },
@@ -70,8 +72,11 @@ export function Sidebar({ className }: { className?: string }) {
     );
 }
 
+import { FrontMatterSection } from './FrontMatterSection';
+import { EndingPagesSection } from './EndingPagesSection';
+import { ValidationSection } from './ValidationSection';
+
 function SectionContent({ id }: { id: string }) {
-    // We'll import these separately to avoid huge file, but for now placeholders or imports
     switch (id) {
         case 'project': return <ProjectSection />;
         case 'paste': return <PasteScenesSection />;
@@ -81,6 +86,9 @@ function SectionContent({ id }: { id: string }) {
         case 'colors': return <ColorsSection />;
         case 'practice': return <PracticeSection />;
         case 'page-numbers': return <PageNumbersSection />;
+        case 'front-matter': return <FrontMatterSection />;
+        case 'ending-pages': return <EndingPagesSection />;
+        case 'validation': return <ValidationSection />;
         case 'export': return <ExportSection />;
         default: return <div className="text-gray-500 italic">Work in progress...</div>;
     }
