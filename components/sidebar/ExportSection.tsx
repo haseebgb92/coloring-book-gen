@@ -28,7 +28,8 @@ export function ExportSection() {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `${state.name.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+            const fileName = (state.name || 'coloring-book').replace(/\s+/g, '-').toLowerCase();
+            link.download = `${fileName}.pdf`;
 
             document.body.appendChild(link);
             link.click();

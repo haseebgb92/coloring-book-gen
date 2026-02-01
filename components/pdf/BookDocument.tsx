@@ -124,10 +124,12 @@ export function BookDocument({ state }: { state: ProjectState }) {
                         alignItems: 'center'
                     }}>
                         {page.title && <Text style={[styles.heading, { textAlign: 'center' }]}>{page.title}</Text>}
-                        {page.image && (
-                            <View style={{ width: '80%', height: '40%', marginBottom: 20 }}>
+                        {page.image && (page.image.startsWith('data:') || page.image.startsWith('http') || page.image.startsWith('blob:')) ? (
+                            <View style={{ width: '80%', height: '50%', marginBottom: 20 }}>
                                 <Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                             </View>
+                        ) : (
+                            page.image && <Text style={{ fontSize: 10, color: '#9ca3af', marginBottom: 10 }}>[Image: {page.image}]</Text>
                         )}
                         {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
                     </View>
@@ -219,7 +221,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     backgroundColor: '#ffffff',
                                     position: 'relative'
                                 }}>
-                                    {scene.illustration ? (
+                                    {scene.illustration && (scene.illustration.startsWith('data:') || scene.illustration.startsWith('http') || scene.illustration.startsWith('blob:')) ? (
                                         <Image
                                             src={scene.illustration}
                                             style={{
@@ -232,8 +234,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                             }}
                                         />
                                     ) : (
-                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                            <Text style={{ color: '#9ca3af', fontSize: 10 }}>No Illustration</Text>
+                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                                            <Text style={{ color: '#9ca3af', fontSize: 10, textAlign: 'center' }}>
+                                                {scene.illustration || 'No Illustration'}
+                                            </Text>
                                         </View>
                                     )}
                                 </View>
