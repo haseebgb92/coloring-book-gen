@@ -22,6 +22,7 @@ export type PrintSettings = {
 
 export type WritingPracticeSettings = {
     minRepetitions: number; // default 3
+    practiceFontSize: number; // default 28
     guidelines: {
         showTop: boolean;
         showMid: boolean;
@@ -56,7 +57,7 @@ export type TemplateConfig = {
         borderStyle: 'none' | 'solid' | 'dashed' | 'double' | 'fancy';
         cornerRadius: number;
         showIcon: boolean;
-        iconSet?: 'stars' | 'leaves' | 'hearts' | 'geometric';
+        iconSet?: 'stars' | 'leaves' | 'hearts' | 'geometric' | 'flowers' | 'puzzles';
         headingSize: number;
         bodySize: number;
     };

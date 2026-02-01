@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ProjectState, Scene } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight, Star, Heart, Leaf, Box } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight, Star, Heart, Leaf, Box, Flower, Puzzle } from 'lucide-react';
 
 const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
     switch (type) {
@@ -11,6 +11,8 @@ const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: strin
         case 'hearts': return <Heart fill={color} stroke="none" size={size} />;
         case 'leaves': return <Leaf fill={color} stroke="none" size={size} />;
         case 'geometric': return <Box fill={color} stroke="none" size={size} />;
+        case 'flowers': return <Flower fill={color} stroke="none" size={size} />;
+        case 'puzzles': return <Puzzle fill={color} stroke="none" size={size} />;
         default: return null;
     }
 };
@@ -89,16 +91,22 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
                     style={pageStyle}
                 >
-                    {/* Decorative Elements */}
+                    {/* Decorative Elements - Positioned in corners OUTSIDE the content area */}
                     {layout.showIcon && layout.iconSet && (
-                        <>
-                            <div className="absolute top-4 left-4 opacity-20">
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                            <div className="absolute top-2 left-2 rotate-[-15deg] opacity-25">
+                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={64 * scale} />
+                            </div>
+                            <div className="absolute top-2 right-2 rotate-[15deg] opacity-25">
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={48 * scale} />
                             </div>
-                            <div className="absolute bottom-12 right-4 opacity-20 transform rotate-12">
-                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={32 * scale} />
+                            <div className="absolute bottom-10 left-4 rotate-[10deg] opacity-25">
+                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={40 * scale} />
                             </div>
-                        </>
+                            <div className="absolute bottom-12 right-4 rotate-[-10deg] opacity-25">
+                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={56 * scale} />
+                            </div>
+                        </div>
                     )}
 
                     <div className="w-full h-full flex flex-col pt-1" style={contentStyle}>
@@ -108,7 +116,8 @@ export function LivePreview({ state }: { state: ProjectState }) {
                                 borderRadius: `${template.layout.cornerRadius}px`,
                                 border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
                                 backgroundColor: '#ffffff',
-                                position: 'relative'
+                                position: 'relative',
+                                zIndex: 10 // Ensure content is above icons if they overlap slightly
                             }}
                         >
                             <h1
@@ -161,7 +170,7 @@ export function LivePreview({ state }: { state: ProjectState }) {
                                                     className="mr-12 select-none"
                                                     style={{
                                                         fontFamily: 'Codystar, cursive',
-                                                        fontSize: `${28 * scale}px`,
+                                                        fontSize: `${(writingSettings.practiceFontSize || 28) * scale}px`,
                                                         color: template.colors.tracing,
                                                         opacity: 0.9,
                                                         fontWeight: 400

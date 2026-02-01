@@ -8,9 +8,11 @@ import { Check } from 'lucide-react';
 
 export function TemplateSection() {
     const currentTemplate = useProjectStore(s => s.template);
+    const writingSettings = useProjectStore(s => s.writingSettings);
     const setTemplate = useProjectStore(s => s.setTemplate);
 
     const updateLayout = useProjectStore(s => s.updateTemplateLayout);
+    const updateWriting = useProjectStore(s => s.updateWritingSettings);
 
     return (
         <div className="space-y-6">
@@ -76,8 +78,21 @@ export function TemplateSection() {
                         />
                     </div>
 
+                    <div>
+                        <div className="flex justify-between mb-1">
+                            <span className="text-xs text-gray-600">Practice Word Size</span>
+                            <span className="text-xs font-mono text-blue-600">{writingSettings.practiceFontSize || 28}px</span>
+                        </div>
+                        <input
+                            type="range" min="12" max="64" step="1"
+                            value={writingSettings.practiceFontSize || 28}
+                            onChange={(e) => updateWriting({ practiceFontSize: parseInt(e.target.value) })}
+                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                        />
+                    </div>
+
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <span className="text-xs text-gray-700">Show Decorative Icons</span>
+                        <span className="text-xs text-gray-700">Show Unique Ornaments</span>
                         <button
                             onClick={() => updateLayout({ showIcon: !currentTemplate.layout.showIcon })}
                             className={cn(

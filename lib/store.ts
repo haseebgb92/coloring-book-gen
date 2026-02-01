@@ -37,7 +37,7 @@ export const useProjectStore = create<ProjectStore>()(
             frontMatter: [],
             endingPages: [],
             printSettings: INITIAL_PROJECT_STATE.printSettings,
-            writingSettings: INITIAL_PROJECT_STATE.writingSettings,
+            writingSettings: { ...INITIAL_PROJECT_STATE.writingSettings, practiceFontSize: 28 },
             template: TEMPLATES[0],
             activeSection: 'project',
             validationErrors: [],
@@ -111,7 +111,7 @@ export const useProjectStore = create<ProjectStore>()(
                 frontMatter: [],
                 endingPages: [],
                 printSettings: INITIAL_PROJECT_STATE.printSettings,
-                writingSettings: INITIAL_PROJECT_STATE.writingSettings,
+                writingSettings: { ...INITIAL_PROJECT_STATE.writingSettings, practiceFontSize: 28 },
                 template: TEMPLATES[0],
                 activeSection: 'project',
                 validationErrors: []

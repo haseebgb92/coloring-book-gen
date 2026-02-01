@@ -43,6 +43,25 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
                     <Path d="M13 2.05A10.57 10.57 0 0 1 15.36 3" fill={color} opacity={0.5} />
                 </Svg>
             );
+        case 'flowers':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Circle cx="12" cy="12" r="3" fill={color} />
+                    <Circle cx="12" cy="7" r="3" fill={color} opacity={0.6} />
+                    <Circle cx="12" cy="17" r="3" fill={color} opacity={0.6} />
+                    <Circle cx="7" cy="12" r="3" fill={color} opacity={0.6} />
+                    <Circle cx="17" cy="12" r="3" fill={color} opacity={0.6} />
+                </Svg>
+            );
+        case 'puzzles':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Rect x="4" y="4" width="7" height="7" rx="1" fill={color} />
+                    <Rect x="13" y="4" width="7" height="7" rx="1" fill={color} />
+                    <Rect x="4" y="13" width="7" height="7" rx="1" fill={color} />
+                    <Rect x="13" y="13" width="7" height="7" rx="1" fill={color} />
+                </Svg>
+            );
         case 'geometric':
             return (
                 <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -140,10 +159,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
             marginBottom: 10,
         },
         practiceWord: {
-            fontSize: 28,
+            fontSize: writingSettings.practiceFontSize || 28,
             color: colors.tracing || '#9ca3af',
             fontFamily: 'Codystar',
-            marginRight: 20,
+            marginRight: 30,
         },
         writingLine: {
             borderBottomWidth: 1,
@@ -184,8 +203,22 @@ export function BookDocument({ state }: { state: ProjectState }) {
 
             {/* Main Scenes */}
             {(scenes || []).map((scene, idx) => {
-                const leftMargins = getMargins('left');
-                const rightMargins = getMargins('right');
+                const isOdd = (idx * 2 + (state.frontMatter?.length || 0)) % 2 !== 0; // Assuming front matter pages are before scene pages
+
+                // Margins based on odd/even for gutter
+                const leftMargins = {
+                    top: (safeMargins.top * PT_PER_INCH) + bleedPt,
+                    bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
+                    left: (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
+                    right: (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
+                };
+
+                const rightMargins = {
+                    top: (safeMargins.top * PT_PER_INCH) + bleedPt,
+                    bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
+                    left: (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
+                    right: (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
+                };
 
                 if (!scene) return null;
 
@@ -193,16 +226,22 @@ export function BookDocument({ state }: { state: ProjectState }) {
                     <React.Fragment key={scene.id || idx}>
                         {/* Left Page: Story + Words */}
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
-                            {/* Decorative Background Icons */}
+                            {/* Decorative Ornaments - Outside the frame */}
                             {layout.showIcon && layout.iconSet && (
-                                <>
-                                    <View style={{ position: 'absolute', top: 30, left: 30, opacity: 0.15 }}>
+                                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.2 }}>
+                                    <View style={{ position: 'absolute', top: 40 + bleedPt, left: 40 + bleedPt, transform: 'rotate(-15deg)' }}>
+                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={80} />
+                                    </View>
+                                    <View style={{ position: 'absolute', top: 40 + bleedPt, right: 40 + bleedPt, transform: 'rotate(15deg)' }}>
                                         <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={60} />
                                     </View>
-                                    <View style={{ position: 'absolute', bottom: 80, right: 30, opacity: 0.15 }}>
-                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={40} />
+                                    <View style={{ position: 'absolute', bottom: 60 + bleedPt, left: 60 + bleedPt, transform: 'rotate(10deg)' }}>
+                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={50} />
                                     </View>
-                                </>
+                                    <View style={{ position: 'absolute', bottom: 80 + bleedPt, right: 60 + bleedPt, transform: 'rotate(-10deg)' }}>
+                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={70} />
+                                    </View>
+                                </View>
                             )}
 
                             <View style={{
@@ -221,10 +260,11 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     borderColor: colors.border || '#000000',
                                     borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
                                     borderRadius: safeCornerRadius,
-                                    backgroundColor: '#ffffff'
+                                    backgroundColor: '#ffffff',
+                                    zIndex: 1
                                 }} />
 
-                                <View style={{ flex: 1, padding: 30, alignItems: 'center' }}>
+                                <View style={{ flex: 1, padding: 30, alignItems: 'center', zIndex: 2 }}>
                                     {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
 
                                     {layout.showIcon && <View style={{ height: 1, width: 80, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 20 }} />}

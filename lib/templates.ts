@@ -65,7 +65,7 @@ export const TEMPLATES: TemplateConfig[] = [
             borderStyle: 'solid',
             cornerRadius: 24,
             showIcon: true,
-            iconSet: 'stars',
+            iconSet: 'puzzles',
             headingSize: 32,
             bodySize: 16
         },
@@ -111,7 +111,7 @@ export const TEMPLATES: TemplateConfig[] = [
             borderStyle: 'solid',
             cornerRadius: 12,
             showIcon: true,
-            iconSet: 'stars',
+            iconSet: 'geometric',
             headingSize: 30,
             bodySize: 14
         },
@@ -318,7 +318,7 @@ export const TEMPLATES: TemplateConfig[] = [
             borderStyle: 'solid',
             cornerRadius: 20,
             showIcon: true,
-            iconSet: 'leaves',
+            iconSet: 'flowers',
             headingSize: 34,
             bodySize: 16
         },
