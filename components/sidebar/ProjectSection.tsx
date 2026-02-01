@@ -82,39 +82,29 @@ export function ProjectSection() {
                 </div>
             </div>
 
-            <div className="space-y-3 pt-4 border-t border-gray-100">
-                <label className="block text-xs font-semibold text-gray-500">ACTIONS</label>
-
-                <button
-                    onClick={handleExportJSON}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                    <Download className="w-4 h-4" />
-                    Save Project to File
-                </button>
-
-                <div className="relative">
-                    <input
-                        type="file"
-                        accept=".json"
-                        onChange={handleImportJSON}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <button
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors pointer-events-none"
-                    >
-                        <Upload className="w-4 h-4" />
-                        Load Project from File
-                    </button>
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between text-[10px] text-gray-500 uppercase font-bold tracking-tight">
+                    <span>Project Info</span>
                 </div>
 
-                <button
-                    onClick={() => { if (confirm('Are you sure? This will delete all scenes and settings.')) resetProject(); }}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100 transition-colors mt-4"
-                >
-                    <RotateCcw className="w-3 h-3" />
-                    Start New Book (Reset)
-                </button>
+                <div className="bg-gray-100/50 p-3 rounded-lg space-y-2">
+                    <div className="flex justify-between items-center text-[10px]">
+                        <span className="text-gray-500 font-medium">Last Modified:</span>
+                        <span className="text-gray-700 font-mono">{new Date(state.lastModified).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                        <span className="text-gray-500 font-medium">Scenes Count:</span>
+                        <span className="text-gray-700 font-mono font-bold">{state.scenes.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                        <span className="text-gray-500 font-medium">Total Pages:</span>
+                        <span className="text-gray-700 font-mono font-bold">~{state.scenes.length * 2 + state.frontMatter.length + state.endingPages.length}</span>
+                    </div>
+                </div>
+
+                <div className="text-[10px] text-gray-400 bg-white p-2 rounded border border-gray-100 italic text-center">
+                    Changes are automatically saved to your browser's local storage.
+                </div>
             </div>
         </div>
     );

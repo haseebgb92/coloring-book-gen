@@ -170,20 +170,24 @@ export function LivePreview({ state }: { state: ProjectState }) {
 
                     <div className="w-full h-full" style={rightContentStyle}>
                         <div
-                            className="w-full h-full relative flex items-center justify-center overflow-hidden"
+                            className="w-full h-full relative"
                             style={{
                                 borderRadius: `${template.layout.cornerRadius}px`,
                                 border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
-                                backgroundColor: '#ffffff'
+                                backgroundColor: '#ffffff',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                             }}
                         >
                             {currentScene.illustration ? (
                                 <img
                                     src={currentScene.illustration}
-                                    className="w-full h-full"
+                                    alt={currentScene.title}
+                                    className="absolute inset-0 w-full h-full"
                                     style={{
-                                        objectFit: currentScene.illustrationFit || 'contain',
-                                        padding: '1rem'
+                                        objectFit: currentScene.illustrationFit || 'cover',
                                     }}
                                 />
                             ) : (

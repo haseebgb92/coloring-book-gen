@@ -21,8 +21,40 @@ export function Sidebar({ className }: { className?: string }) {
     const activeSection = useProjectStore((state) => state.activeSection);
     const setActiveSection = useProjectStore((state) => state.setActiveSection);
     const validationErrors = useProjectStore((state) => state.validationErrors);
+    const resetProject = useProjectStore(s => s.resetProject);
+    const state = useProjectStore(s => s);
 
-    /* Sync validation errors logic placeholder */
+    const handleExportJSON = () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `${state.name.replace(/\s+/g, '-').toLowerCase()}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
+
+    const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                if (ev.target?.result) {
+                    const data = JSON.parse(ev.target.result as string);
+                    if (data.scenes && data.printSettings) {
+                        useProjectStore.setState(data);
+                        alert('Project loaded successfully!');
+                    } else {
+                        alert('Invalid project file.');
+                    }
+                }
+            } catch (err) {
+                alert('Failed to parse project file.');
+            }
+        };
+        reader.readAsText(file);
+    };
 
     const sections = [
         { id: 'project', label: 'Project', icon: Folder },
@@ -41,33 +73,79 @@ export function Sidebar({ className }: { className?: string }) {
 
     return (
         <aside className={cn("flex flex-col text-sm h-full", className)}>
-            {sections.map((section) => {
-                const hasError = validationErrors.some(e => e.sectionId === section.id && e.severity === 'error');
-                const hasWarning = validationErrors.some(e => e.sectionId === section.id && e.severity === 'warning');
-
-                return (
-                    <div key={section.id} className="border-b border-gray-100 last:border-0">
+            {/* Quick Actions Header */}
+            <div className="p-4 bg-gray-50 border-b border-gray-200 space-y-3">
+                <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quick Actions</span>
+                    <span className="text-[10px] text-green-600 flex items-center gap-1 font-medium italic">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        Autosaved
+                    </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    <button
+                        onClick={() => { if (confirm('Start a new book? All unsaved changes will be lost.')) resetProject(); }}
+                        className="flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg hover:bg-red-50 hover:border-red-200 transition-all group"
+                        title="New Book"
+                    >
+                        <Folder className="w-4 h-4 text-gray-400 group-hover:text-red-500 mb-1" />
+                        <span className="text-[10px] text-gray-600 group-hover:text-red-700">New</span>
+                    </button>
+                    <button
+                        onClick={handleExportJSON}
+                        className="flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-all group"
+                        title="Save Project"
+                    >
+                        <FileOutput className="w-4 h-4 text-gray-400 group-hover:text-blue-500 mb-1" />
+                        <span className="text-[10px] text-gray-600 group-hover:text-blue-700">Save</span>
+                    </button>
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportJSON}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
                         <button
-                            onClick={() => setActiveSection(section.id)}
-                            className={cn(
-                                "w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left focus:outline-none",
-                                activeSection === section.id ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700"
-                            )}
+                            className="w-full flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg pointer-events-none group"
+                            title="Load Project"
                         >
-                            <div className="flex items-center gap-3">
-                                <section.icon className="w-5 h-5 shrink-0" />
-                                <span>{section.label}</span>
-                            </div>
-                            {hasError && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                            <Layers className="w-4 h-4 text-gray-400 group-hover:text-amber-500 mb-1" />
+                            <span className="text-[10px] text-gray-600 group-hover:text-amber-700">Load</span>
                         </button>
-                        {activeSection === section.id && (
-                            <div className="p-4 bg-gray-50 border-t border-gray-100 shadow-inner animate-in slide-in-from-top-2 duration-200">
-                                <SectionContent id={section.id} />
-                            </div>
-                        )}
                     </div>
-                );
-            })}
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+                {sections.map((section) => {
+                    const hasError = validationErrors.some(e => e.sectionId === section.id && e.severity === 'error');
+                    const hasWarning = validationErrors.some(e => e.sectionId === section.id && e.severity === 'warning');
+
+                    return (
+                        <div key={section.id} className="border-b border-gray-100 last:border-0">
+                            <button
+                                onClick={() => setActiveSection(section.id)}
+                                className={cn(
+                                    "w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left focus:outline-none",
+                                    activeSection === section.id ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700"
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <section.icon className="w-5 h-5 shrink-0" />
+                                    <span>{section.label}</span>
+                                </div>
+                                {hasError && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                            </button>
+                            {activeSection === section.id && (
+                                <div className="p-4 bg-gray-50 border-t border-gray-100 shadow-inner animate-in slide-in-from-top-2 duration-200">
+                                    <SectionContent id={section.id} />
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
         </aside>
     );
 }

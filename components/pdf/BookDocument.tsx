@@ -196,22 +196,27 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     borderWidth: template.layout.borderStyle !== 'none' ? 2 : 0,
                                     borderColor: template.colors.border,
                                     borderStyle: template.layout.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                    borderRadius: template.layout.cornerRadius, // ReactPDF supports cornerRadius
-                                    padding: 10, // Inner padding
-                                    justifyContent: 'center',
-                                    alignItems: 'center'
+                                    borderRadius: template.layout.cornerRadius,
+                                    overflow: 'hidden',
+                                    backgroundColor: '#ffffff',
+                                    position: 'relative'
                                 }}>
                                     {scene.illustration ? (
                                         <Image
                                             src={scene.illustration}
                                             style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
                                                 width: '100%',
                                                 height: '100%',
-                                                objectFit: 'contain'
+                                                objectFit: 'cover'
                                             }}
                                         />
                                     ) : (
-                                        <Text style={{ color: '#9ca3af' }}>No Illustration</Text>
+                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                            <Text style={{ color: '#9ca3af', fontSize: 10 }}>No Illustration</Text>
+                                        </View>
                                     )}
                                 </View>
                             </View>

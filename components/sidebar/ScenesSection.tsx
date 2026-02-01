@@ -83,39 +83,61 @@ export function ScenesSection() {
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 mb-1">ILLUSTRATION</label>
-                                <div className="flex items-center gap-2">
-                                    {scene.illustration ? (
-                                        <div className="relative w-16 h-16 border rounded bg-gray-100">
-                                            <img src={scene.illustration} alt="preview" className="w-full h-full object-cover rounded" />
-                                            <button
-                                                onClick={() => updateScene(scene.id, { illustration: null })}
-                                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
-                                            >
-                                                ×
-                                            </button>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        {scene.illustration ? (
+                                            <div className="relative w-16 h-16 border rounded bg-gray-100 shrink-0">
+                                                <img src={scene.illustration} alt="preview" className={`w-full h-full rounded ${scene.illustrationFit === 'cover' ? 'object-cover' : 'object-contain'}`} />
+                                                <button
+                                                    onClick={() => updateScene(scene.id, { illustration: null })}
+                                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="w-16 h-16 border border-dashed rounded bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                                                <ImageIcon className="w-6 h-6" />
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (ev) => {
+                                                            if (ev.target?.result) updateScene(scene.id, { illustration: ev.target.result as string });
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                                className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                            />
                                         </div>
-                                    ) : (
-                                        <div className="w-16 h-16 border border-dashed rounded bg-gray-50 flex items-center justify-center text-gray-400">
-                                            <ImageIcon className="w-6 h-6" />
+                                    </div>
+
+                                    {scene.illustration && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Fit Mode:</span>
+                                            <div className="flex bg-gray-100 p-0.5 rounded-md">
+                                                <button
+                                                    onClick={() => updateScene(scene.id, { illustrationFit: 'cover' })}
+                                                    className={`px-3 py-1 text-[10px] rounded ${scene.illustrationFit === 'cover' || !scene.illustrationFit ? 'bg-white shadow-sm text-blue-600 font-bold' : 'text-gray-500'}`}
+                                                >
+                                                    Cover (Crop)
+                                                </button>
+                                                <button
+                                                    onClick={() => updateScene(scene.id, { illustrationFit: 'contain' })}
+                                                    className={`px-3 py-1 text-[10px] rounded ${scene.illustrationFit === 'contain' ? 'bg-white shadow-sm text-blue-600 font-bold' : 'text-gray-500'}`}
+                                                >
+                                                    Contain
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
-                                    <div className="flex-1">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onload = (ev) => {
-                                                        if (ev.target?.result) updateScene(scene.id, { illustration: ev.target.result as string });
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                            className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                        />
-                                    </div>
                                 </div>
                             </div>
                         </div>
