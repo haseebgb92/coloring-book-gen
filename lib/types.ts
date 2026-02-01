@@ -66,6 +66,9 @@ export type Scene = {
     words: string[]; // List of words to trace
     illustration: string | null; // Data URL or Image URL
     illustrationFit: 'cover' | 'contain';
+    illustrationScale?: number; // Manual scale (zoom)
+    illustrationPositionX?: number; // Offset X in %
+    illustrationPositionY?: number; // Offset Y in %
 };
 
 export type FrontMatterType = 'title' | 'copyright' | 'dedication' | 'about' | 'usage' | 'parents' | 'toc' | 'custom';

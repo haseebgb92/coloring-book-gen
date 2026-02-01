@@ -120,21 +120,72 @@ export function ScenesSection() {
                                     </div>
 
                                     {scene.illustration && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Fit Mode:</span>
-                                            <div className="flex bg-gray-100 p-0.5 rounded-md">
+                                        <div className="space-y-4 pt-2 border-t border-gray-50">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase">Fit & Framing</span>
                                                 <button
-                                                    onClick={() => updateScene(scene.id, { illustrationFit: 'cover' })}
-                                                    className={`px-3 py-1 text-[10px] rounded ${scene.illustrationFit === 'cover' || !scene.illustrationFit ? 'bg-white shadow-sm text-blue-600 font-bold' : 'text-gray-500'}`}
+                                                    onClick={() => updateScene(scene.id, {
+                                                        illustrationScale: 1.05,
+                                                        illustrationPositionX: 0,
+                                                        illustrationPositionY: 0,
+                                                        illustrationFit: 'cover'
+                                                    })}
+                                                    className="text-[10px] text-blue-500 hover:text-blue-700 font-medium"
                                                 >
-                                                    Cover (Crop)
+                                                    Reset
                                                 </button>
-                                                <button
-                                                    onClick={() => updateScene(scene.id, { illustrationFit: 'contain' })}
-                                                    className={`px-3 py-1 text-[10px] rounded ${scene.illustrationFit === 'contain' ? 'bg-white shadow-sm text-blue-600 font-bold' : 'text-gray-500'}`}
-                                                >
-                                                    Contain
-                                                </button>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex bg-gray-100 p-0.5 rounded-md w-full">
+                                                    <button
+                                                        onClick={() => updateScene(scene.id, { illustrationFit: 'cover' })}
+                                                        className={`flex-1 px-3 py-1 text-[10px] rounded transition-all ${scene.illustrationFit === 'cover' || !scene.illustrationFit ? 'bg-white shadow-sm text-blue-600 font-bold' : 'text-gray-500'}`}
+                                                    >
+                                                        Cover (Fill)
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateScene(scene.id, { illustrationFit: 'contain' })}
+                                                        className={`flex-1 px-3 py-1 text-[10px] rounded transition-all ${scene.illustrationFit === 'contain' ? 'bg-white shadow-sm text-blue-600 font-bold' : 'text-gray-500'}`}
+                                                    >
+                                                        Contain
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <div className="flex justify-between mb-1">
+                                                        <label className="text-[10px] text-gray-500 font-medium uppercase">Zoom ({Math.round((scene.illustrationScale || 1.05) * 100)}%)</label>
+                                                    </div>
+                                                    <input
+                                                        type="range" min="0.5" max="3" step="0.05"
+                                                        value={scene.illustrationScale || 1.05}
+                                                        onChange={(e) => updateScene(scene.id, { illustrationScale: parseFloat(e.target.value) })}
+                                                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] text-gray-500 font-medium uppercase mb-1">X Offset ({scene.illustrationPositionX || 0}%)</label>
+                                                        <input
+                                                            type="range" min="-100" max="100" step="1"
+                                                            value={scene.illustrationPositionX || 0}
+                                                            onChange={(e) => updateScene(scene.id, { illustrationPositionX: parseInt(e.target.value) })}
+                                                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] text-gray-500 font-medium uppercase mb-1">Y Offset ({scene.illustrationPositionY || 0}%)</label>
+                                                        <input
+                                                            type="range" min="-100" max="100" step="1"
+                                                            value={scene.illustrationPositionY || 0}
+                                                            onChange={(e) => updateScene(scene.id, { illustrationPositionY: parseInt(e.target.value) })}
+                                                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     )}

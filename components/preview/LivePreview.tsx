@@ -185,10 +185,10 @@ export function LivePreview({ state }: { state: ProjectState }) {
                                 <img
                                     src={currentScene.illustration}
                                     alt={currentScene.title}
-                                    className="absolute inset-0 w-full h-full transition-transform duration-500"
+                                    className="absolute inset-0 w-full h-full transition-all duration-300"
                                     style={{
                                         objectFit: currentScene.illustrationFit || 'cover',
-                                        transform: 'scale(1.05)',
+                                        transform: `scale(${currentScene.illustrationScale || 1.05}) translate(${currentScene.illustrationPositionX || 0}%, ${currentScene.illustrationPositionY || 0}%)`,
                                     }}
                                 />
                             ) : (

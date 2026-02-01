@@ -206,10 +206,13 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                             src={scene.illustration}
                                             style={{
                                                 position: 'absolute',
-                                                top: '-2.5%',
-                                                left: '-2.5%',
-                                                width: '105%',
-                                                height: '105%',
+                                                // Calculate base offset to center the scaled image
+                                                // Base offset = (1 - scale) / 2 * 100
+                                                // Then add user offset
+                                                top: `${((1 - (scene.illustrationScale || 1.05)) / 2 * 100) + (scene.illustrationPositionY || 0)}%`,
+                                                left: `${((1 - (scene.illustrationScale || 1.05)) / 2 * 100) + (scene.illustrationPositionX || 0)}%`,
+                                                width: `${(scene.illustrationScale || 1.05) * 100}%`,
+                                                height: `${(scene.illustrationScale || 1.05) * 100}%`,
                                                 objectFit: 'cover'
                                             }}
                                         />
