@@ -1,31 +1,39 @@
 import jsPDF from 'jspdf';
 import { ProjectState, Story } from '../types';
 import { getPageDimensions, INCHES_TO_POINTS } from './kdp-helper';
-import { loadFontAsBase64, RALEWAY_DOTS_URL } from './font-loader';
-import { GOOGLE_FONTS } from './fonts';
+// import { loadFontAsBase64, RALEWAY_DOTS_URL } from './font-loader';
+// import { GOOGLE_FONTS } from './fonts';
 
 export async function generateColoringBookPDF(
     project: ProjectState,
     onProgress?: (progress: number) => void
 ): Promise<Blob> {
-    const { width, height } = getPageDimensions(project.config);
+    // Ensure valid dimensions
+    let { width, height } = getPageDimensions(project.config);
+    if (!width || !height) {
+        width = 8.5;
+        height = 11;
+    }
+
     const pdf = new jsPDF({
         orientation: width > height ? 'landscape' : 'portrait',
         unit: 'in',
         format: [width, height],
     });
 
-    // 1. Load Dotted Font (Essential)
+    // DISABLE CUSTOM FONTS loading completely to isolate the issue.
+    // We rely PURELY on standard Helvetica/Times/Courier.
+    /*
     try {
-        const fontData = await loadFontAsBase64(RALEWAY_DOTS_URL);
-        const base64 = fontData.split(',')[1];
-        pdf.addFileToVFS('RalewayDots.ttf', base64);
-        pdf.addFont('RalewayDots.ttf', 'RalewayDots', 'normal');
+      const fontData = await loadFontAsBase64(RALEWAY_DOTS_URL);
+      const base64 = fontData.split(',')[1];
+      pdf.addFileToVFS('RalewayDots.ttf', base64);
+      pdf.addFont('RalewayDots.ttf', 'RalewayDots', 'normal');
     } catch (e) {
-        console.warn('Failed to load dotted font', e);
+      console.warn('Failed to load dotted font', e);
     }
+    */
 
-    // FORCE HELVETICA - lowercase is critical for jsPDF standard fonts
     const activeFont = 'helvetica';
 
     let currentPage = 0;
@@ -59,8 +67,7 @@ export async function generateColoringBookPDF(
     for (const story of project.stories) {
         // LEFT page: Story + Writing Practice
         pdf.addPage();
-        // Explicitly forcing helvetica inside the function calls to prevent any ambiguity
-        addStoryTextPage(pdf, story, project, 'helvetica');
+        addStoryTextPage(pdf, story, project, activeFont);
         updateProgress();
 
         // RIGHT page: Illustration
@@ -86,9 +93,8 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
 
     const customContent = project.customText?.[type];
 
-    // FORCE standard font
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0);
+    pdf.setTextColor(0, 0, 0); // Explicit black
 
     if (type === 'title-page') {
         let currentY = h / 2;
@@ -105,17 +111,17 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
                     logoH = maxLogoH;
                     logoW = logoH * imgRatio;
                 }
-                // Adjust Y to center vertically with logo
                 const logoY = (h / 2) - logoH - 30;
                 pdf.addImage(project.logo, 'PNG', (w - logoW) / 2 / INCHES_TO_POINTS, logoY / INCHES_TO_POINTS, logoW / INCHES_TO_POINTS, logoH / INCHES_TO_POINTS);
-                currentY = h / 2 + 30; // Push title down
+                currentY = h / 2 + 30;
             } catch (e) {
                 console.warn("Failed to render logo", e);
             }
         }
 
         pdf.setFontSize(32);
-        pdf.text(project.title, w / 2, currentY, { align: 'center', lineHeightFactor: 1.5 });
+        // DEBUG: console.log("Rendering Title:", project.title);
+        pdf.text(project.title || "Untitled Book", w / 2, currentY, { align: 'center' });
 
         pdf.setFontSize(14);
         const sub = customContent || "A Story-Based Coloring Book";
@@ -123,7 +129,6 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
 
     } else if (type === 'this-book-belongs-to') {
         pdf.setFontSize(18);
-
         if (customContent) {
             const lines = pdf.splitTextToSize(customContent, w * 0.8);
             pdf.text(lines, w / 2, h / 3, { align: 'center' });
@@ -132,12 +137,11 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
             pdf.setLineWidth(1);
             pdf.line(w * 0.2, h / 2, w * 0.8, h / 2);
         }
-
     } else if (type === 'copyright') {
         pdf.setFontSize(12);
         const text = customContent || `Copyright © ${new Date().getFullYear()} ${project.title}\nAll Rights Reserved.`;
         const lines = pdf.splitTextToSize(text, w * 0.8);
-        pdf.text(lines, w / 2, h / 2, { align: 'center', lineHeightFactor: 1.5 });
+        pdf.text(lines, w / 2, h / 2, { align: 'center' });
 
     } else if (type === 'color-test') {
         pdf.setFontSize(24);
@@ -149,7 +153,6 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
             pdf.text(lines, w / 2, h * 0.25, { align: 'center' });
         }
 
-        // Draw Swatches
         const boxSize = 80;
         const gap = 40;
         const startX = (w - (boxSize * 3 + gap * 2)) / 2;
@@ -166,11 +169,11 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
 
         if (!customContent) {
             pdf.setFontSize(11);
-            pdf.setTextColor(100);
+            pdf.setTextColor(100, 100, 100);
             const tips = "GUIDANCE: Test your crayons, markers, and pencils here. Use the one that doesn't seep through! If using markers, verify bleed-through before starting.";
             const tipsLines = pdf.splitTextToSize(tips, w * 0.7);
-            pdf.text(tipsLines, w / 2, h * 0.7, { align: 'center', lineHeightFactor: 1.5 });
-            pdf.setTextColor(0);
+            pdf.text(tipsLines, w / 2, h * 0.7, { align: 'center' });
+            pdf.setTextColor(0, 0, 0);
         }
 
     } else if (type === 'certificate') {
@@ -188,15 +191,13 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
             pdf.text("CERTIFICATE", w / 2, h / 3, { align: 'center' });
             pdf.setFontSize(16);
             pdf.text("Of Completion", w / 2, h / 3 + 30, { align: 'center' });
-
             pdf.text("This certifies that", w / 2, h / 2, { align: 'center' });
             pdf.line(w / 4, h / 2 + 40, w * 0.75, h / 2 + 40);
-
             pdf.text("Has completed this coloring book!", w / 2, h * 0.7, { align: 'center' });
         }
     } else {
         pdf.setFontSize(18);
-        const text = customContent || type.replace(/-/g, ' ').toUpperCase();
+        const text = customContent || type.toUpperCase();
         pdf.text(text, w / 2, h / 2, { align: 'center' });
     }
 }
@@ -254,7 +255,10 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     const w = width * INCHES_TO_POINTS;
     const h = height * INCHES_TO_POINTS;
     const margin = project.config.margins;
-    const fontSize = project.template.fontSize || 12;
+
+    // Safety check on font size
+    const fontSize = project.template.fontSize && project.template.fontSize > 0 ? project.template.fontSize : 12;
+
     const isEven = pdf.getNumberOfPages() % 2 === 0;
 
     const marginLeft = (isEven ? margin.outer : margin.inner) * INCHES_TO_POINTS;
@@ -263,25 +267,29 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
 
     let currentY = margin.top * INCHES_TO_POINTS + 40;
 
-    // Title - FORCE HELVETICA
+    // Title
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(24);
-    pdf.setTextColor(0);
-    pdf.text(story.title, w / 2, currentY, { align: 'center' });
+    pdf.setTextColor(0, 0, 0);
+    // Guard against missing title
+    if (story.title) {
+        pdf.text(story.title, w / 2, currentY, { align: 'center' });
+    }
     currentY += 40;
 
-    // Story Text - FORCE HELVETICA
+    // Story Text
+    pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(fontSize);
-    pdf.setTextColor(0);
+    pdf.setTextColor(0, 0, 0);
 
-    const paragraphs = story.story_text.split('\n');
+    const paragraphs = story.story_text ? story.story_text.split('\n') : [];
     paragraphs.forEach(para => {
         if (!para.trim()) {
             currentY += fontSize;
             return;
         }
         const lines = pdf.splitTextToSize(para, contentWidth);
-        pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
+        pdf.text(lines, marginLeft, currentY, { align: 'left' }); // Removed lineHeightFactor to be safe
         currentY += lines.length * fontSize * 1.5 + fontSize;
     });
 
@@ -290,22 +298,17 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     // Writing Practice
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(10);
-    pdf.setTextColor(100);
+    pdf.setTextColor(100, 100, 100);
     pdf.text("WRITING PRACTICE", w / 2, currentY, { align: 'center' });
     currentY += 30;
 
     // Words
-    // Use Raleway Dots if possible, fallback logic:
-    // RalewayDots was added in main function with 'normal'.
-    try {
-        pdf.setFont('RalewayDots', 'normal');
-    } catch {
-        pdf.setFont('helvetica', 'normal'); // dashed fallback?
-    }
+    // Fallback to Courier for "Dots-like" mono look since we disabled custom font
+    pdf.setFont('courier', 'normal');
     pdf.setFontSize(28);
-    pdf.setTextColor(100);
+    pdf.setTextColor(100, 100, 100);
 
-    const practiceWords = story.writing_words.slice(0, 5);
+    const practiceWords = story.writing_words ? story.writing_words.slice(0, 5) : [];
     practiceWords.forEach((word) => {
         // Guide Line
         pdf.setDrawColor(180);
