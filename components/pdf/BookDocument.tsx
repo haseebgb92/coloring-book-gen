@@ -116,25 +116,6 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const marginLeft = (safeMargins.outer * PT_PER_INCH) + bleedPt;
     const marginRight = (safeMargins.inner * PT_PER_INCH) + bleedPt;
 
-    const getMargins = (side: 'left' | 'right') => {
-        const t = (safeMargins.top * PT_PER_INCH) + bleedPt;
-        const b = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
-
-        if (side === 'left') {
-            return {
-                top: t, bottom: b,
-                left: (safeMargins.outer * PT_PER_INCH) + bleedPt,
-                right: (safeMargins.inner * PT_PER_INCH)
-            };
-        } else {
-            return {
-                top: t, bottom: b,
-                left: (safeMargins.inner * PT_PER_INCH),
-                right: (safeMargins.outer * PT_PER_INCH) + bleedPt
-            };
-        }
-    };
-
     const styles = StyleSheet.create({
         page: {
             backgroundColor: colors.background || '#ffffff',
@@ -185,27 +166,35 @@ export function BookDocument({ state }: { state: ProjectState }) {
                         marginLeft: marginLeft,
                         marginRight: marginRight,
                         flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center'
+                        position: 'relative'
                     }}>
-                        {page.title && <Text style={styles.heading}>{page.title}</Text>}
-                        {page.image && (page.image.startsWith('data:') || page.image.startsWith('http') || page.image.startsWith('blob:')) ? (
-                            <View style={{ width: '80%', height: '50%', marginBottom: 20 }}>
-                                <Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                            </View>
-                        ) : (
-                            page.image && <Text style={{ fontSize: 10, color: '#9ca3af', marginBottom: 10 }}>[Image: {page.image}]</Text>
-                        )}
-                        {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
+                        <View style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            borderWidth: borderWeight,
+                            borderColor: colors.border,
+                            borderRadius: safeCornerRadius,
+                            backgroundColor: '#ffffff'
+                        }} />
+                        <View style={{ flex: 1, padding: 30, justifyContent: 'center', alignItems: 'center' }}>
+                            {page.title && <Text style={[styles.heading, { color: colors.heading }]}>{page.title}</Text>}
+                            {page.image && (page.image.startsWith('data:') || page.image.startsWith('http') || page.image.startsWith('blob:')) ? (
+                                <View style={{ width: '80%', height: '50%', marginBottom: 20 }}>
+                                    <Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                </View>
+                            ) : (
+                                page.image && <Text style={{ fontSize: 10, color: '#9ca3af', marginBottom: 10 }}>[Image: {page.image}]</Text>
+                            )}
+                            {page.text && <Text style={[styles.text, { textAlign: 'center', color: colors.storyText }]}>{page.text}</Text>}
+                        </View>
                     </View>
                 </Page>
             ))}
 
             {/* Main Scenes */}
             {(scenes || []).map((scene, idx) => {
-                const isOdd = (idx * 2 + (state.frontMatter?.length || 0)) % 2 !== 0; // Assuming front matter pages are before scene pages
+                const isOdd = (idx * 2 + (state.frontMatter?.length || 0)) % 2 !== 0;
 
-                // Margins based on odd/even for gutter
                 const leftMargins = {
                     top: (safeMargins.top * PT_PER_INCH) + bleedPt,
                     bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
@@ -226,9 +215,9 @@ export function BookDocument({ state }: { state: ProjectState }) {
                     <React.Fragment key={scene.id || idx}>
                         {/* Left Page: Story + Words */}
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
-                            {/* Decorative Ornaments - Outside the frame */}
+                            {/* Decorative Ornaments Layer */}
                             {layout.showIcon && layout.iconSet && (
-                                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.2 }}>
+                                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.15 }}>
                                     <View style={{ position: 'absolute', top: 40 + bleedPt, left: 40 + bleedPt, transform: 'rotate(-15deg)' }}>
                                         <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={80} />
                                     </View>
@@ -252,24 +241,21 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 flex: 1,
                                 position: 'relative'
                             }}>
-                                {/* Story Frame - Uses dynamic background color */}
+                                {/* Story Area Frame */}
                                 <View style={{
                                     position: 'absolute',
                                     top: 0, left: 0, right: 0, bottom: 0,
                                     borderWidth: borderWeight,
-                                    borderColor: colors.border || '#000000',
+                                    borderColor: colors.border,
                                     borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
                                     borderRadius: safeCornerRadius,
-                                    backgroundColor: colors.background || '#ffffff',
-                                    zIndex: 1
+                                    backgroundColor: '#ffffff'
                                 }} />
 
-                                <View style={{ flex: 1, padding: 30, alignItems: 'center', zIndex: 2 }}>
-                                    {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
-
+                                <View style={{ flex: 1, padding: 30, alignItems: 'center' }}>
+                                    {scene.title && <Text style={[styles.heading, { color: colors.heading }]}>{scene.title}</Text>}
                                     {layout.showIcon && <View style={{ height: 1, width: 80, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 20 }} />}
-
-                                    {scene.story && <Text style={[styles.text, { textAlign: 'center' }]}>{scene.story}</Text>}
+                                    {scene.story && <Text style={[styles.text, { textAlign: 'center', color: colors.storyText }]}>{scene.story}</Text>}
 
                                     <View style={{ marginTop: 40, width: '100%' }}>
                                         {(scene.words || []).map((word, wIdx) => (
@@ -284,11 +270,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                                     {writingSettings.guidelines.showBase && (
                                                         <View style={[styles.writingLine, { top: 45, borderBottomColor: colors.writingLine }]} />
                                                     )}
-
                                                     <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 10 }}>
                                                         {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
                                                             <View key={rIdx} style={{ marginRight: 30 }}>
-                                                                <Text style={[styles.practiceWord, { color: colors.tracing, fontFamily: 'Codystar' }]}>
+                                                                <Text style={[styles.practiceWord, { color: colors.tracing }]}>
                                                                     {word || ''}
                                                                 </Text>
                                                             </View>
@@ -308,7 +293,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     bottom: 20,
                                     left: 0, right: 0,
                                     textAlign: 'center',
-                                    color: colors.pageNumber || '#000000',
+                                    color: colors.pageNumber,
                                     fontSize: 10
                                 }}>
                                     {2 + (state.frontMatter?.length || 0) + (idx * 2)}
@@ -330,7 +315,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 <View style={{
                                     width: pageWidth - (rightMargins.left + rightMargins.right),
                                     height: pageHeight - (rightMargins.top + rightMargins.bottom),
-                                    backgroundColor: colors.background || '#ffffff',
+                                    backgroundColor: '#ffffff',
                                     position: 'relative',
                                     overflow: 'hidden',
                                     borderRadius: safeCornerRadius,
@@ -361,9 +346,9 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                         position: 'absolute',
                                         top: 0, left: 0, right: 0, bottom: 0,
                                         borderWidth: borderWeight,
-                                        borderColor: colors.border || '#000000',
+                                        borderColor: colors.border,
                                         borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                        ...(safeCornerRadius > 0 ? { borderRadius: safeCornerRadius } : {}),
+                                        borderRadius: safeCornerRadius,
                                     }} />
                                 </View>
                             </View>
@@ -375,7 +360,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     bottom: 20,
                                     left: 0, right: 0,
                                     textAlign: 'center',
-                                    color: colors.pageNumber || '#000000',
+                                    color: colors.pageNumber,
                                     fontSize: 10
                                 }}>
                                     {3 + (state.frontMatter?.length || 0) + (idx * 2)}
@@ -395,11 +380,20 @@ export function BookDocument({ state }: { state: ProjectState }) {
                         marginLeft: marginLeft,
                         marginRight: marginRight,
                         flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center'
+                        position: 'relative'
                     }}>
-                        {page.title && <Text style={styles.heading}>{page.title}</Text>}
-                        {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
+                        <View style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            borderWidth: borderWeight,
+                            borderColor: colors.border,
+                            borderRadius: safeCornerRadius,
+                            backgroundColor: '#ffffff'
+                        }} />
+                        <View style={{ flex: 1, padding: 30, justifyContent: 'center', alignItems: 'center' }}>
+                            {page.title && <Text style={[styles.heading, { color: colors.heading }]}>{page.title}</Text>}
+                            {page.text && <Text style={[styles.text, { textAlign: 'center', color: colors.storyText }]}>{page.text}</Text>}
+                        </View>
                     </View>
                 </Page>
             ))}
