@@ -241,6 +241,7 @@ export function LivePreview({ state }: { state: ProjectState }) {
                                     style={{
                                         objectFit: currentScene.illustrationFit || 'cover',
                                         transform: `scale(${currentScene.illustrationScale || 1.05}) translate(${currentScene.illustrationPositionX || 0}%, ${currentScene.illustrationPositionY || 0}%)`,
+                                        borderRadius: `${template.layout.cornerRadius}px`,
                                     }}
                                 />
                             ) : (

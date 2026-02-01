@@ -252,7 +252,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 flex: 1,
                                 position: 'relative'
                             }}>
-                                {/* Story Frame - Solid White for Premium Look */}
+                                {/* Story Frame - Uses dynamic background color */}
                                 <View style={{
                                     position: 'absolute',
                                     top: 0, left: 0, right: 0, bottom: 0,
@@ -260,7 +260,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     borderColor: colors.border || '#000000',
                                     borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
                                     borderRadius: safeCornerRadius,
-                                    backgroundColor: '#ffffff',
+                                    backgroundColor: colors.background || '#ffffff',
                                     zIndex: 1
                                 }} />
 
@@ -330,9 +330,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 <View style={{
                                     width: pageWidth - (rightMargins.left + rightMargins.right),
                                     height: pageHeight - (rightMargins.top + rightMargins.bottom),
-                                    backgroundColor: '#ffffff',
+                                    backgroundColor: colors.background || '#ffffff',
                                     position: 'relative',
                                     overflow: 'hidden',
+                                    borderRadius: safeCornerRadius,
                                 }}>
                                     {/* Image Layer */}
                                     {scene.illustration && (scene.illustration.startsWith('data:') || scene.illustration.startsWith('http') || scene.illustration.startsWith('blob:')) ? (
