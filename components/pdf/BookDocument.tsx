@@ -22,7 +22,7 @@ const DecorativeLayer = ({ layout, colors, bleedPt }: {
     if (!layout.showIcon || !layout.iconSet) return null;
 
     return (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.15 }} pointerEvents="none">
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.15 }}>
             <View style={{ position: 'absolute', top: 40 + bleedPt, left: 40 + bleedPt, transform: 'rotate(-15deg)' }}>
                 <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={80} />
             </View>
