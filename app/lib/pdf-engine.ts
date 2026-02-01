@@ -25,7 +25,7 @@ export async function generateColoringBookPDF(
         console.warn('Failed to load dotted font', e);
     }
 
-    // 2. Load Template Font (if strictly needed)
+    // 2. Load Template Font
     const templateFontName = project.template.fontFamily;
     let activeFont = 'helvetica'; // Fallback
 
@@ -37,10 +37,9 @@ export async function generateColoringBookPDF(
             const filename = `${templateFontName.replace(/\s+/g, '')}.ttf`;
 
             pdf.addFileToVFS(filename, base64);
+            // CRITICAL FIX: Use 'Identity-H' for correct Unicode mapping of custom fonts
             pdf.addFont(filename, templateFontName, 'normal');
-            pdf.addFont(filename, templateFontName, 'bold'); // Re-use normal for bold if single weight, or just use normal
             activeFont = templateFontName;
-            console.log(`Loaded custom font: ${templateFontName}`);
         } catch (e) {
             console.warn(`Failed to load template font ${templateFontName}, falling back to Helvetica`, e);
         }
@@ -64,22 +63,20 @@ export async function generateColoringBookPDF(
     // Add front matter
     for (const matter of project.frontMatter) {
         pdf.addPage();
-        addFrontMatterPage(pdf, matter, project, activeFont); // Use active font here too if desired
+        addFrontMatterPage(pdf, matter, project, activeFont);
         updateProgress();
     }
 
     // Ensure stories start on LEFT page (even page number)
-    // Left page = Verso. Right page = Recto.
-    // We want spread: Left = Story, Right = Illustration.
-    // Standard book: Page 1 (R), Page 2 (L), Page 3 (R).
-    // Ideally, Page 2 starts the story.
-
-    // Logic:
-    // If we are at an ODD page count (last page was Right), next is Left. Perfect.
-    // If we are at an EVEN page count (last page was Left), next is Right. We need to skip one to start on Left.
     let pageNum = pdf.getNumberOfPages();
+    // We want the Story spread to start on a LEFT page (Even).
+    // Current count | Type | Next Page needs to be
+    // 1 (Odd)       | Right| Left (Even) -> OK
+    // 2 (Even)      | Left | Right (Odd) -> Need spacer to get to Left
+
     if (pageNum % 2 === 0) {
-        // Last page was Left. Next is Right. Add blank.
+        // Last page was Left. Next available is Right.
+        // We want to start on Left. So add a blank Right page.
         pdf.addPage();
         updateProgress();
     }
@@ -112,9 +109,22 @@ function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectState, fon
     const w = width * INCHES_TO_POINTS;
     const h = height * INCHES_TO_POINTS;
 
-    pdf.setFont(fontName, 'bold');
+    pdf.setFont(fontName, 'normal');
     pdf.setFontSize(24);
-    pdf.text(type === 'title-page' ? project.title : type.toUpperCase(), w / 2, h / 2, { align: 'center' });
+
+    let text = type.replace(/-/g, ' ').toUpperCase();
+    if (type === 'title-page') {
+        text = project.title;
+        pdf.setFontSize(32);
+    } else if (type === 'this-book-belongs-to') {
+        text = "This Book Belongs To:\n\n_________________________";
+        pdf.setFontSize(18);
+    } else if (type === 'copyright') {
+        text = `Copyright © ${new Date().getFullYear()} ${project.title}\nAll Rights Reserved.`;
+        pdf.setFontSize(12);
+    }
+
+    pdf.text(text, w / 2, h / 2, { align: 'center', lineHeightFactor: 1.5 });
 }
 
 async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectState) {
@@ -181,10 +191,6 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
 
     const isEven = pdf.getNumberOfPages() % 2 === 0;
 
-    // Verify Margin Logic for LEFT PAGE (Even):
-    // Even Page (Verso/Left):
-    // Inner Binding Edge is Right side. Outer Edge is Left Side.
-    // Left Margin should be Outer. Right Margin should be Inner.
     const marginLeft = (isEven ? margin.outer : margin.inner) * INCHES_TO_POINTS;
     const marginRight = (isEven ? margin.inner : margin.outer) * INCHES_TO_POINTS;
     const contentWidth = w - marginLeft - marginRight;
@@ -192,16 +198,17 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     let currentY = margin.top * INCHES_TO_POINTS + 40;
 
     // Title
-    pdf.setFont(fontName);
-    // Attempt to set bold if possible, but for custom fonts embedded as 'normal' we might just use normal
-    // pdf.setFont(fontName, 'bold'); 
+    try {
+        pdf.setFont(fontName, 'normal');
+    } catch (e) {
+        pdf.setFont('helvetica', 'normal');
+    }
     pdf.setFontSize(24);
     pdf.setTextColor(0);
     pdf.text(story.title, w / 2, currentY, { align: 'center' });
     currentY += 40;
 
     // Story Text
-    pdf.setFont(fontName, 'normal');
     pdf.setFontSize(fontSize);
     pdf.setTextColor(0);
 
@@ -211,9 +218,20 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
             currentY += fontSize;
             return;
         }
-        const lines = pdf.splitTextToSize(para, contentWidth);
-        pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
-        currentY += lines.length * fontSize * 1.5 + fontSize;
+        // Safety check for text width calculation failure
+        try {
+            const lines = pdf.splitTextToSize(para, contentWidth);
+            pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
+            currentY += lines.length * fontSize * 1.5 + fontSize;
+        } catch (e) {
+            console.warn("Text split failed, falling back to Helvetica", e);
+            pdf.setFont('helvetica', 'normal');
+            const lines = pdf.splitTextToSize(para, contentWidth);
+            pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
+            currentY += lines.length * fontSize * 1.5 + fontSize;
+            // Revert font setup
+            try { pdf.setFont(fontName, 'normal'); } catch { }
+        }
     });
 
     currentY += 20;
@@ -254,7 +272,30 @@ function addEndMatterPage(pdf: jsPDF, type: string, project: ProjectState, fontN
     const w = width * INCHES_TO_POINTS;
     const h = height * INCHES_TO_POINTS;
 
-    pdf.setFont(fontName, 'normal');
+    try {
+        pdf.setFont(fontName, 'normal');
+    } catch {
+        pdf.setFont('helvetica', 'normal');
+    }
     pdf.setFontSize(18);
-    pdf.text(type.toUpperCase(), w / 2, h / 2, { align: 'center' });
+
+    if (type === 'certificate') {
+        // Draw a fancy border
+        const margin = 40;
+        pdf.setDrawColor(0);
+        pdf.setLineWidth(4);
+        pdf.rect(margin, margin, w - margin * 2, h - margin * 2);
+
+        pdf.setFontSize(32);
+        pdf.text("CERTIFICATE", w / 2, h / 3, { align: 'center' });
+        pdf.setFontSize(16);
+        pdf.text("Of Completion", w / 2, h / 3 + 30, { align: 'center' });
+
+        pdf.text("This certifies that", w / 2, h / 2, { align: 'center' });
+        pdf.line(w / 4, h / 2 + 40, w * 0.75, h / 2 + 40); // line
+
+        pdf.text("Has completed this coloring book!", w / 2, h * 0.7, { align: 'center' });
+    } else {
+        pdf.text(type.toUpperCase(), w / 2, h / 2, { align: 'center' });
+    }
 }

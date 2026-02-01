@@ -29,7 +29,8 @@ import {
     Upload,
     CheckCircle2,
     Paperclip,
-    X
+    X,
+    Layers
 } from 'lucide-react';
 import { ProjectState, Story, TrimSize } from './types';
 import { KDP_PRESETS } from './lib/kdp-helper';
@@ -44,7 +45,7 @@ export default function ColoringBookStudio() {
         config: KDP_PRESETS['8.5x11'],
         stories: [],
         template: BUILT_IN_TEMPLATES[0],
-        frontMatter: ['title-page', 'copyright'],
+        frontMatter: ['title-page', 'copyright', 'this-book-belongs-to'],
         endMatter: ['certificate'],
     });
 
@@ -112,6 +113,24 @@ export default function ColoringBookStudio() {
         }
     };
 
+    const togglePage = (type: 'front' | 'end', pageId: string) => {
+        if (type === 'front') {
+            const current = [...project.frontMatter];
+            if (current.includes(pageId)) {
+                setProject({ ...project, frontMatter: current.filter(p => p !== pageId) });
+            } else {
+                setProject({ ...project, frontMatter: [...current, pageId] });
+            }
+        } else {
+            const current = [...project.endMatter];
+            if (current.includes(pageId)) {
+                setProject({ ...project, endMatter: current.filter(p => p !== pageId) });
+            } else {
+                setProject({ ...project, endMatter: [...current, pageId] });
+            }
+        }
+    };
+
     const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
@@ -173,7 +192,7 @@ export default function ColoringBookStudio() {
             saveAs(pdfBlob, `${project.title.replace(/\s+/g, '_')}_KDP.pdf`);
         } catch (e) {
             console.error("Export failed", e);
-            alert("Failed to generate PDF");
+            alert("Failed to generate PDF. Check console for details.");
         } finally {
             setIsGenerating(false);
         }
@@ -362,6 +381,59 @@ export default function ColoringBookStudio() {
                             </AccordionContent>
                         </AccordionItem>
 
+                        {/* BOOK STRUCTURE (NEW) */}
+                        <AccordionItem value="structure" className="border-b border-slate-100">
+                            <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                                        <Layers className="h-5 w-5 text-amber-600" />
+                                    </div>
+                                    <span className="font-bold text-slate-800">Book Structure</span>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-8 pb-6 space-y-4">
+                                <div className="space-y-4">
+                                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Front Matter</Label>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox"
+                                                checked={project.frontMatter.includes('title-page')}
+                                                onChange={() => togglePage('front', 'title-page')}
+                                                className="rounded border-slate-300 text-indigo-600" />
+                                            <span className="text-sm">Title Page</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox"
+                                                checked={project.frontMatter.includes('copyright')}
+                                                onChange={() => togglePage('front', 'copyright')}
+                                                className="rounded border-slate-300 text-indigo-600" />
+                                            <span className="text-sm">Copyright Page</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox"
+                                                checked={project.frontMatter.includes('this-book-belongs-to')}
+                                                onChange={() => togglePage('front', 'this-book-belongs-to')}
+                                                className="rounded border-slate-300 text-indigo-600" />
+                                            <span className="text-sm">"This Book Belongs To" Page</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-slate-100">
+                                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">End Matter</Label>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox"
+                                                checked={project.endMatter.includes('certificate')}
+                                                onChange={() => togglePage('end', 'certificate')}
+                                                className="rounded border-slate-300 text-indigo-600" />
+                                            <span className="text-sm">Completion Certificate</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+
                         {/* DESIGN */}
                         <AccordionItem value="design" className="border-b border-slate-100">
                             <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
@@ -470,9 +542,10 @@ export default function ColoringBookStudio() {
                                             </div>
                                         </>
                                     ) : currentSpread === 0 ? (
-                                        <div className="flex items-center justify-center h-full flex-col">
+                                        <div className="flex items-center justify-center h-full flex-col p-8 text-center">
                                             <Sparkles className="h-12 w-12 text-indigo-500 mb-4" />
-                                            <h1 className="text-2xl font-bold text-center text-slate-900" style={{ fontFamily: fontFamilyStyle }}>{project.title}</h1>
+                                            <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: fontFamilyStyle }}>{project.title}</h1>
+                                            <div className="mt-4 text-xs text-slate-400">Title Page Preview</div>
                                         </div>
                                     ) : null}
                                 </div>
@@ -489,6 +562,12 @@ export default function ColoringBookStudio() {
                                                     <span className="text-xs font-bold uppercase">No Image</span>
                                                 </div>
                                             )}
+                                        </div>
+                                    ) : currentSpread === 0 ? (
+                                        <div className="flex items-center justify-center h-full text-center">
+                                            <div className="text-slate-300 text-xs uppercase tracking-widest">
+                                                Inside Cover / Blank
+                                            </div>
                                         </div>
                                     ) : null}
                                 </div>
