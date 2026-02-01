@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import { ProjectState, Story } from '../types';
 import { getPageDimensions, INCHES_TO_POINTS } from './kdp-helper';
+import { loadFontAsBase64, RALEWAY_DOTS_URL } from './font-loader';
+import { GOOGLE_FONTS } from './fonts';
 
 export async function generateColoringBookPDF(
     project: ProjectState,
@@ -8,22 +10,58 @@ export async function generateColoringBookPDF(
 ): Promise<Blob> {
     // 1. Calculate Dimensions in POINTS
     let { width: widthIn, height: heightIn } = getPageDimensions(project.config);
-
-    // Safety Fallback
     if (!widthIn || !heightIn) { widthIn = 8.5; heightIn = 11; }
 
     const widthPt = widthIn * INCHES_TO_POINTS;
     const heightPt = heightIn * INCHES_TO_POINTS;
 
-    // 2. Initialize PDF with POINTS unit
-    // This ensures that coordinate (306, 396) means 306 points, not 306 inches.
+    // Bleed Offset: 0.125 inches if bleed is enabled
+    const bleedIn = project.config.hasBleed ? 0.125 : 0;
+    const bleedPt = bleedIn * INCHES_TO_POINTS;
+
     const pdf = new jsPDF({
         orientation: widthIn > heightIn ? 'landscape' : 'portrait',
-        unit: 'pt', // CRITICAL FIX: Use Points
+        unit: 'pt',
         format: [widthPt, heightPt],
     });
 
-    const activeFont = 'helvetica';
+    // 2. Load Fonts
+    try {
+        const fontData = await loadFontAsBase64(RALEWAY_DOTS_URL);
+        const base64 = fontData.split(',')[1];
+        pdf.addFileToVFS('RalewayDots.ttf', base64);
+        pdf.addFont('RalewayDots.ttf', 'RalewayDots', 'normal');
+    } catch (e) {
+        console.warn('Failed to load dotted font', e);
+    }
+
+    // Load Template Custom Font
+    let activeFont = 'helvetica';
+    const templateFontName = project.template.fontFamily; // e.g., 'Fredoka' or 'Comic Neue'
+
+    if (templateFontName && GOOGLE_FONTS[templateFontName as keyof typeof GOOGLE_FONTS]) {
+        try {
+            const fontUrl = GOOGLE_FONTS[templateFontName as keyof typeof GOOGLE_FONTS];
+            const fontData = await loadFontAsBase64(fontUrl);
+            const base64 = fontData.split(',')[1];
+            const filename = `${templateFontName.replace(/\s+/g, '')}.ttf`;
+
+            pdf.addFileToVFS(filename, base64);
+            pdf.addFont(filename, templateFontName, 'normal');
+
+            // Verify it loaded by setting it temporarily in a try catch
+            pdf.setFont(templateFontName, 'normal');
+            activeFont = templateFontName;
+        } catch (e) {
+            console.warn(`Failed to load custom font ${templateFontName}, falling back`, e);
+            activeFont = 'helvetica';
+        }
+    } else if (['Times', 'Courier'].includes(templateFontName)) {
+        activeFont = templateFontName.toLowerCase();
+    } else if (templateFontName) {
+        // Try to use it if it's a standard one or already added
+        activeFont = templateFontName;
+    }
 
     let currentPage = 0;
     const totalPages = project.frontMatter.length + project.stories.length * 2 + project.endMatter.length;
@@ -35,13 +73,15 @@ export async function generateColoringBookPDF(
         }
     };
 
-    // Remove the default first page
     pdf.deletePage(1);
+
+    // Common Props for helpers
+    const props = { pdf, project, activeFont, w: widthPt, h: heightPt, bleedPt };
 
     // Add front matter
     for (const matter of project.frontMatter) {
         pdf.addPage();
-        await addFrontMatterPage(pdf, matter, project, activeFont, widthPt, heightPt);
+        await addFrontMatterPage(matter, props);
         updateProgress();
     }
 
@@ -56,68 +96,84 @@ export async function generateColoringBookPDF(
     for (const story of project.stories) {
         // LEFT page: Story + Writing Practice
         pdf.addPage();
-        addStoryTextPage(pdf, story, project, activeFont, widthPt, heightPt);
+        addStoryTextPage(story, props);
         updateProgress();
 
         // RIGHT page: Illustration
         pdf.addPage();
-        await addIllustrationPage(pdf, story, project, widthPt, heightPt);
+        await addIllustrationPage(story, props);
         updateProgress();
     }
 
     // Add end matter
     for (const matter of project.endMatter) {
         pdf.addPage();
-        await addFrontMatterPage(pdf, matter, project, activeFont, widthPt, heightPt);
+        await addFrontMatterPage(matter, props);
         updateProgress();
     }
 
     return pdf.output('blob');
 }
 
-// Updated Helper Functions to accept Width/Height in Points explicitly
-async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectState, fontName: string, w: number, h: number) {
+interface PageProps {
+    pdf: jsPDF;
+    project: ProjectState;
+    activeFont: string;
+    w: number;
+    h: number;
+    bleedPt: number;
+}
 
+async function addFrontMatterPage(type: string, { pdf, project, activeFont, w, h, bleedPt }: PageProps) {
     const customContent = project.customText?.[type];
 
-    pdf.setFont('helvetica', 'normal');
+    try {
+        pdf.setFont(activeFont, 'normal');
+    } catch {
+        pdf.setFont('helvetica', 'normal');
+    }
     pdf.setTextColor(0, 0, 0);
 
+    // Effective Top/Bottom Margins including Bleed
+    const topM = (project.config.margins.top * INCHES_TO_POINTS) + bleedPt;
+    const bottomM = (project.config.margins.bottom * INCHES_TO_POINTS) + bleedPt;
+    const availableH = h - topM - bottomM;
+
+    // Center Y reference relative to Safe Area
+    const centerY = topM + (availableH / 2);
+
     if (type === 'title-page') {
-        let currentY = h / 2;
+        let currentY = centerY;
 
         if (project.logo) {
             try {
                 const imgProps = pdf.getImageProperties(project.logo);
                 const imgRatio = imgProps.width / imgProps.height;
+                // Max Logo area
                 const maxLogoW = w * 0.4;
-                const maxLogoH = h * 0.3;
+                const maxLogoH = availableH * 0.4;
                 let logoW = maxLogoW;
                 let logoH = maxLogoW / imgRatio;
                 if (logoH > maxLogoH) {
                     logoH = maxLogoH;
                     logoW = logoH * imgRatio;
                 }
-                const logoY = (h / 2) - logoH - 30;
-                // No division by INCHES_TO_POINTS because unit is now 'pt'
+                const logoY = centerY - logoH - 40;
                 pdf.addImage(project.logo, 'PNG', (w - logoW) / 2, logoY, logoW, logoH);
-                currentY = h / 2 + 30;
-            } catch (e) {
-                console.warn("Failed to render logo", e);
-            }
+                currentY = centerY + 40;
+            } catch (e) { console.warn("Logo error", e); }
         }
 
         pdf.setFontSize(32);
-        pdf.text(project.title || "Untitled Book", w / 2, currentY, { align: 'center' });
+        pdf.text(project.title || "Untitled", w / 2, currentY, { align: 'center' });
 
         pdf.setFontSize(14);
-        const sub = customContent || "A Story-Based Coloring Book";
-        pdf.text(sub, w / 2, currentY + 30, { align: 'center' });
+        pdf.text(customContent || "A Story-Based Coloring Book", w / 2, currentY + 40, { align: 'center' });
 
     } else if (type === 'this-book-belongs-to') {
         pdf.setFontSize(18);
         if (customContent) {
-            const lines = pdf.splitTextToSize(customContent, w * 0.8);
+            const lines = pdf.splitTextToSize(customContent, w * 0.7);
             pdf.text(lines, w / 2, h / 3, { align: 'center' });
         } else {
             pdf.text("This Book Belongs To:", w / 2, h / 3, { align: 'center' });
@@ -127,77 +183,95 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
     } else if (type === 'copyright') {
         pdf.setFontSize(12);
         const text = customContent || `Copyright © ${new Date().getFullYear()} ${project.title}\nAll Rights Reserved.`;
-        const lines = pdf.splitTextToSize(text, w * 0.8);
-        pdf.text(lines, w / 2, h / 2, { align: 'center' });
+        const lines = pdf.splitTextToSize(text, w * 0.7); // Smaller width constraints
+        pdf.text(lines, w / 2, centerY, { align: 'center' });
 
     } else if (type === 'color-test') {
         pdf.setFontSize(24);
-        pdf.text("Test Your Colors", w / 2, h * 0.15, { align: 'center' });
+        // Top 15% relative to bleed is weird. Use absolute from Top Margin.
+        const titleY = topM + 60;
+        pdf.text("Test Your Colors", w / 2, titleY, { align: 'center' });
 
         if (customContent) {
             pdf.setFontSize(12);
             const lines = pdf.splitTextToSize(customContent, w * 0.8);
-            pdf.text(lines, w / 2, h * 0.25, { align: 'center' });
+            pdf.text(lines, w / 2, titleY + 40, { align: 'center' });
         }
 
         const boxSize = 80;
         const gap = 40;
         const startX = (w - (boxSize * 3 + gap * 2)) / 2;
-        const startY = h * 0.35;
+        const boxesY = centerY - (boxSize / 2); // Vertically Center boxes
+
         const labels = ["Crayons", "Pencils", "Markers"];
         labels.forEach((label, i) => {
             const x = startX + i * (boxSize + gap);
             pdf.setDrawColor(0);
             pdf.setLineWidth(2);
-            pdf.rect(x, startY, boxSize, boxSize);
+            pdf.rect(x, boxesY, boxSize, boxSize);
             pdf.setFontSize(14);
-            pdf.text(label, x + boxSize / 2, startY + boxSize + 20, { align: 'center' });
+            pdf.text(label, x + boxSize / 2, boxesY + boxSize + 25, { align: 'center' });
         });
 
         if (!customContent) {
             pdf.setFontSize(11);
-            pdf.setTextColor(100, 100, 100);
+            pdf.setTextColor(80, 80, 80);
             const tips = "GUIDANCE: Test your crayons, markers, and pencils here. Use the one that doesn't seep through! If using markers, verify bleed-through before starting.";
             const tipsLines = pdf.splitTextToSize(tips, w * 0.7);
-            pdf.text(tipsLines, w / 2, h * 0.7, { align: 'center' });
+            pdf.text(tipsLines, w / 2, h - bottomM - 40, { align: 'center' });
             pdf.setTextColor(0, 0, 0);
         }
 
     } else if (type === 'certificate') {
-        const margin = 40;
+        const frameMargin = topM; // Use top margin as frame inset
         pdf.setDrawColor(0);
         pdf.setLineWidth(4);
-        pdf.rect(margin, margin, w - margin * 2, h - margin * 2);
+        pdf.rect(frameMargin, frameMargin, w - frameMargin * 2, h - frameMargin * 2);
 
         if (customContent) {
             pdf.setFontSize(16);
-            const lines = pdf.splitTextToSize(customContent, w - margin * 4);
-            pdf.text(lines, w / 2, h / 2, { align: 'center' });
+            const lines = pdf.splitTextToSize(customContent, w - frameMargin * 4);
+            pdf.text(lines, w / 2, centerY, { align: 'center' });
         } else {
             pdf.setFontSize(32);
-            pdf.text("CERTIFICATE", w / 2, h / 3, { align: 'center' });
+            pdf.text("CERTIFICATE", w / 2, topM + 100, { align: 'center' });
             pdf.setFontSize(16);
-            pdf.text("Of Completion", w / 2, h / 3 + 30, { align: 'center' });
-            pdf.text("This certifies that", w / 2, h / 2, { align: 'center' });
-            pdf.line(w / 4, h / 2 + 40, w * 0.75, h / 2 + 40);
-            pdf.text("Has completed this coloring book!", w / 2, h * 0.7, { align: 'center' });
+            pdf.text("Of Completion", w / 2, topM + 140, { align: 'center' });
+            pdf.text("This certifies that", w / 2, centerY, { align: 'center' });
+            pdf.line(w / 4, centerY + 40, w * 0.75, centerY + 40);
+            pdf.text("Has completed this coloring book!", w / 2, h - bottomM - 100, { align: 'center' });
         }
     } else {
         pdf.setFontSize(18);
-        const text = customContent || type.toUpperCase();
-        pdf.text(text, w / 2, h / 2, { align: 'center' });
+        pdf.text(customContent || type.toUpperCase(), w / 2, centerY, { align: 'center' });
     }
 }
 
-async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectState, w: number, h: number) {
+async function addIllustrationPage(story: Story, { pdf, project, w, h, bleedPt }: PageProps) {
     const margin = project.config.margins;
 
-    const safeAvailableW = w - (margin.inner + margin.outer) * INCHES_TO_POINTS;
-    const safeAvailableH = h - (margin.top + margin.bottom) * INCHES_TO_POINTS;
+    const topM = (margin.top * INCHES_TO_POINTS) + bleedPt;
+    const bottomM = (margin.bottom * INCHES_TO_POINTS) + bleedPt;
+    // Illustration is Recto (Right page).
+    // Inner margin is Left. Outer margin is Right.
+    const innerM = (margin.inner * INCHES_TO_POINTS) + bleedPt;
+    const outerM = (margin.outer * INCHES_TO_POINTS) + bleedPt;
+
+    const safeAvailableW = w - innerM - outerM;
+    const safeAvailableH = h - topM - bottomM;
+
+    // Frame size: 85% of safe area
     const frameW = safeAvailableW * 0.85;
     const frameH = safeAvailableH * 0.85;
-    const centerX = w / 2;
-    const centerY = h / 2;
+
+    // Frame is centered in the Safe Area
+    // Safe Area starts at (innerM, topM)
+    const safeX = innerM;
+    const safeY = topM;
+
+    const centerX = safeX + (safeAvailableW / 2);
+    const centerY = safeY + (safeAvailableH / 2);
+
     const frameX = centerX - (frameW / 2);
     const frameY = centerY - (frameH / 2);
 
@@ -227,7 +301,6 @@ async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectSta
             const imgX = frameX + padding + (innerW - finalW) / 2;
             const imgY = frameY + padding + (innerH - finalH) / 2;
 
-            // No division because unit is 'pt'
             pdf.addImage(story.illustration, 'PNG', imgX, imgY, finalW, finalH);
         } catch (e) {
             console.error("Failed to add image to PDF", e);
@@ -235,32 +308,34 @@ async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectSta
     }
 }
 
-function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontName: string, w: number, h: number) {
+function addStoryTextPage(story: Story, { pdf, project, activeFont, w, h, bleedPt }: PageProps) {
     const margin = project.config.margins;
-
     const fontSize = project.template.fontSize && project.template.fontSize > 0 ? project.template.fontSize : 12;
 
-    const isEven = pdf.getNumberOfPages() % 2 === 0;
+    // Story is Verso (Left Page).
+    // Inner margin is Right. Outer margin is Left.
+    const innerM = (margin.inner * INCHES_TO_POINTS) + bleedPt;
+    const outerM = (margin.outer * INCHES_TO_POINTS) + bleedPt;
 
-    const marginLeft = (isEven ? margin.outer : margin.inner) * INCHES_TO_POINTS;
-    const marginRight = (isEven ? margin.inner : margin.outer) * INCHES_TO_POINTS;
+    const topM = (margin.top * INCHES_TO_POINTS) + bleedPt;
+
+    const marginLeft = outerM; // Outer is Left on Verso
+    const marginRight = innerM; // Inner is Right on Verso
     const contentWidth = w - marginLeft - marginRight;
 
-    let currentY = margin.top * INCHES_TO_POINTS + 40;
+    let currentY = topM + 50;
 
     // Title
-    pdf.setFont('helvetica', 'normal');
+    try { pdf.setFont(activeFont, 'normal'); } catch { pdf.setFont('helvetica', 'normal'); }
     pdf.setFontSize(24);
     pdf.setTextColor(0, 0, 0);
     if (story.title) {
         pdf.text(story.title, w / 2, currentY, { align: 'center' });
     }
-    currentY += 40;
+    currentY += 50;
 
     // Story Text
-    pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(fontSize);
-    pdf.setTextColor(0, 0, 0);
 
     const paragraphs = story.story_text ? story.story_text.split('\n') : [];
     paragraphs.forEach(para => {
@@ -269,34 +344,33 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
             return;
         }
         const lines = pdf.splitTextToSize(para, contentWidth);
+        // Use active font, fallback handled at function start or by jspdf
         pdf.text(lines, marginLeft, currentY, { align: 'left' });
         currentY += lines.length * fontSize * 1.5 + fontSize;
     });
 
-    currentY += 20;
+    currentY += 30;
 
     // Writing Practice
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(10);
     pdf.setTextColor(100, 100, 100);
     pdf.text("WRITING PRACTICE", w / 2, currentY, { align: 'center' });
-    currentY += 30;
+    currentY += 35;
 
     // Words
-    pdf.setFont('courier', 'normal');
+    try { pdf.setFont('RalewayDots', 'normal'); } catch { pdf.setFont('courier', 'normal'); }
     pdf.setFontSize(28);
     pdf.setTextColor(100, 100, 100);
 
     const practiceWords = story.writing_words ? story.writing_words.slice(0, 5) : [];
     practiceWords.forEach((word) => {
-        // Guide Line
         pdf.setDrawColor(180);
         pdf.setLineWidth(0.5);
         pdf.setLineDash([2, 2], 0);
         pdf.line(marginLeft, currentY + 6, w - marginRight, currentY + 6);
         pdf.setLineDash([], 0);
 
-        // 3x Repetition
         const sectionW = contentWidth / 3;
         pdf.text(word, marginLeft + sectionW * 0.5, currentY, { align: 'center' });
         pdf.text(word, marginLeft + sectionW * 1.5, currentY, { align: 'center' });
