@@ -1,6 +1,8 @@
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * API to Save Project JSON to Vercel KV with History and Indexing
  */
@@ -38,7 +40,10 @@ export async function POST(req: Request) {
         };
 
         // Use a HASH to store project metadata for quick listing
+        // field: projectId, value: stringified metadata
         await kv.hset('projects:metadata', { [project.id]: JSON.stringify(metadata) });
+        // Double-check indexing using explicit field/value if the above form has issues in some environments
+        // await kv.hset('projects:metadata', project.id, JSON.stringify(metadata));
 
         return NextResponse.json({
             success: true,

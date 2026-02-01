@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Loader2, Plus, Book, Clock, Trash2, ArrowRight } from 'lucide-react';
+import { Loader2, Plus, Book, Clock, Trash2, ArrowRight, RotateCcw } from 'lucide-react';
 import { useProjectStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
@@ -17,18 +17,24 @@ interface ProjectMetadata {
 export function Gallery({ onSelect }: { onSelect: (id: string) => void }) {
     const [projects, setProjects] = useState<ProjectMetadata[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const resetProject = useProjectStore(s => s.resetProject);
 
     const fetchProjects = async () => {
         setLoading(true);
+        setError(null);
         try {
             const res = await fetch('/api/project?list=true');
             if (res.ok) {
                 const data = await res.json();
                 setProjects(data);
+            } else {
+                const errData = await res.json();
+                setError(errData.error || 'Failed to fetch project list');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to fetch projects', err);
+            setError('Could not connect to the database. Check your connection.');
         } finally {
             setLoading(false);
         }
@@ -54,7 +60,25 @@ export function Gallery({ onSelect }: { onSelect: (id: string) => void }) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                <p className="text-gray-500 font-medium">Loading your library...</p>
+                <p className="text-gray-500 font-medium tracking-tight">Syncing with Upstash Cloud...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="max-w-xl mx-auto mt-20 p-8 bg-red-50 border border-red-100 rounded-3xl text-center">
+                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trash2 className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-red-900">Connection Error</h3>
+                <p className="text-red-700/70 text-sm mt-1">{error}</p>
+                <button
+                    onClick={fetchProjects}
+                    className="mt-6 px-6 py-2 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-200"
+                >
+                    Retry Connection
+                </button>
             </div>
         );
     }
@@ -66,13 +90,22 @@ export function Gallery({ onSelect }: { onSelect: (id: string) => void }) {
                     <h1 className="text-3xl font-black text-gray-900 tracking-tight">Your Coloring Books</h1>
                     <p className="text-gray-500 mt-1">Manage and edit your cloud-synced projects</p>
                 </div>
-                <button
-                    onClick={() => { resetProject(); onSelect('new'); }}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
-                >
-                    <Plus className="w-5 h-5" />
-                    Create New Book
-                </button>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={fetchProjects}
+                        className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                        title="Refresh Library"
+                    >
+                        <RotateCcw className={cn("w-5 h-5", loading && "animate-spin")} />
+                    </button>
+                    <button
+                        onClick={() => { resetProject(); onSelect('new'); }}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Create New Book
+                    </button>
+                </div>
             </header>
 
             {projects.length === 0 ? (
