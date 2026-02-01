@@ -44,13 +44,21 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const pageWidth = width + (bleed ? bleedPt * 2 : 0);
     const pageHeight = height + (bleed ? bleedPt * 2 : 0);
 
-    // Safe Margin Access
-    const safeMargins = {
-        top: Number(margins?.top || 0.5),
-        bottom: Number(margins?.bottom || 0.5),
-        inner: Number(margins?.inner || 0.5),
-        outer: Number(margins?.outer || 0.5),
+    // Safe Value Helpers
+    const getNum = (val: any, fallback: number) => {
+        const n = Number(val);
+        return (typeof val === 'number' || typeof val === 'string') && !isNaN(n) ? Math.max(0, n) : fallback;
     };
+
+    const safeMargins = {
+        top: getNum(margins?.top, 0.5),
+        bottom: getNum(margins?.bottom, 0.5),
+        inner: getNum(margins?.inner, 0.5),
+        outer: getNum(margins?.outer, 0.5),
+    };
+
+    const safeCornerRadius = getNum(layout?.cornerRadius, 0);
+    const borderWeight = (layout?.borderStyle && layout?.borderStyle !== 'none') ? 2 : 0;
 
     const marginTop = (safeMargins.top * PT_PER_INCH) + bleedPt;
     const marginBottom = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
@@ -111,11 +119,19 @@ export function BookDocument({ state }: { state: ProjectState }) {
             position: 'absolute',
             left: 0, right: 0,
             height: 1,
+        },
+        illustrationFrame: {
+            width: '100%',
+            height: '100%',
+            borderWidth: borderWeight,
+            borderColor: colors.border || '#000000',
+            borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
+            borderRadius: safeCornerRadius,
+            overflow: 'hidden',
+            backgroundColor: '#ffffff',
+            position: 'relative'
         }
     });
-
-    const safeCornerRadius = typeof layout.cornerRadius === 'number' ? layout.cornerRadius : 0;
-    const borderWeight = (layout.borderStyle && layout.borderStyle !== 'none') ? 2 : 0;
 
     return (
         <Document title={state.name || 'Coloring Book'}>
@@ -196,10 +212,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
                             {printSettings.pageNumbers.enabled && (
                                 <Text style={{
                                     position: 'absolute',
-                                    bottom: 20,
+                                    bottom: Number(20),
                                     left: 0, right: 0,
                                     textAlign: 'center',
-                                    color: colors.pageNumber || '#000',
+                                    color: colors.pageNumber || '#000000',
                                     fontSize: 10
                                 }}>
                                     {2 + (state.frontMatter?.length || 0) + (idx * 2)}
@@ -218,26 +234,16 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 justifyContent: 'center',
                                 alignItems: 'center'
                             }}>
-                                <View style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    borderWidth: borderWeight,
-                                    borderColor: colors.border || '#000',
-                                    borderStyle: layout.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                    borderRadius: safeCornerRadius,
-                                    overflow: 'hidden',
-                                    backgroundColor: '#ffffff',
-                                    position: 'relative'
-                                }}>
+                                <View style={styles.illustrationFrame}>
                                     {scene.illustration && (scene.illustration.startsWith('data:') || scene.illustration.startsWith('http') || scene.illustration.startsWith('blob:')) ? (
                                         <Image
                                             src={scene.illustration}
                                             style={{
                                                 position: 'absolute',
-                                                top: `${((1 - (scene.illustrationScale || 1.05)) / 2 * 100) + (scene.illustrationPositionY || 0)}%`,
-                                                left: `${((1 - (scene.illustrationScale || 1.05)) / 2 * 100) + (scene.illustrationPositionX || 0)}%`,
-                                                width: `${(scene.illustrationScale || 1.05) * 100}%`,
-                                                height: `${(scene.illustrationScale || 1.05) * 100}%`,
+                                                top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + getNum(scene.illustrationPositionY, 0)}%`,
+                                                left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + getNum(scene.illustrationPositionX, 0)}%`,
+                                                width: `${getNum(scene.illustrationScale, 1.05) * 100}%`,
+                                                height: `${getNum(scene.illustrationScale, 1.05) * 100}%`,
                                                 objectFit: 'cover'
                                             }}
                                         />
@@ -255,10 +261,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
                             {printSettings.pageNumbers.enabled && (
                                 <Text style={{
                                     position: 'absolute',
-                                    bottom: 20,
+                                    bottom: Number(20),
                                     left: 0, right: 0,
                                     textAlign: 'center',
-                                    color: colors.pageNumber || '#000',
+                                    color: colors.pageNumber || '#000000',
                                     fontSize: 10
                                 }}>
                                     {3 + (state.frontMatter?.length || 0) + (idx * 2)}
