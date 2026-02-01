@@ -107,7 +107,7 @@ export function LivePreview({ state }: { state: ProjectState }) {
                             style={{
                                 borderRadius: `${template.layout.cornerRadius}px`,
                                 border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
-                                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                backgroundColor: '#ffffff',
                                 position: 'relative'
                             }}
                         >

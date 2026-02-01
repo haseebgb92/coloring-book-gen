@@ -3,23 +3,23 @@ import { Document, Page, Text, View, Image, StyleSheet, Font, Svg, Path, Circle,
 import { ProjectState, Scene } from '@/lib/types';
 import { TEMPLATES, INITIAL_PROJECT_STATE } from '@/lib/templates';
 
-const PT_PER_INCH = 72;
-
-// Register Dotted Font for Tracing
+// Register Fonts with CORS-friendly CDN (jsDelivr)
 Font.register({
     family: 'Codystar',
-    src: 'https://github.com/google/fonts/raw/main/ofl/codystar/Codystar-Regular.ttf'
+    src: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/codystar/Codystar-Regular.ttf'
 });
 
 Font.register({
     family: 'Fredoka',
-    src: 'https://github.com/google/fonts/raw/main/ofl/fredoka/Fredoka%5Bwdth%2Cwght%5D.ttf'
+    src: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/fredoka/static/Fredoka-Bold.ttf'
 });
 
 Font.register({
     family: 'Outfit',
-    src: 'https://github.com/google/fonts/raw/main/ofl/outfit/Outfit%5Bwght%5D.ttf'
+    src: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/outfit/static/Outfit-Bold.ttf'
 });
+
+const PT_PER_INCH = 72;
 
 // Decorative Components for PDF
 const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
@@ -213,19 +213,18 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 flex: 1,
                                 position: 'relative'
                             }}>
-                                {/* Story Frame */}
+                                {/* Story Frame - Solid White for Premium Look */}
                                 <View style={{
                                     position: 'absolute',
                                     top: 0, left: 0, right: 0, bottom: 0,
                                     borderWidth: borderWeight,
                                     borderColor: colors.border || '#000000',
                                     borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                    ...(safeCornerRadius > 0 ? { borderRadius: safeCornerRadius } : {}),
-                                    backgroundColor: '#ffffff',
-                                    opacity: 0.5 // Subtle background for the content area
+                                    borderRadius: safeCornerRadius,
+                                    backgroundColor: '#ffffff'
                                 }} />
 
-                                <View style={{ flex: 1, padding: 20, alignItems: 'center' }}>
+                                <View style={{ flex: 1, padding: 30, alignItems: 'center' }}>
                                     {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
 
                                     {layout.showIcon && <View style={{ height: 1, width: 80, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 20 }} />}
