@@ -30,7 +30,8 @@ import {
     CheckCircle2,
     Paperclip,
     X,
-    Layers
+    Layers,
+    Edit3
 } from 'lucide-react';
 import { ProjectState, Story, TrimSize } from './types';
 import { KDP_PRESETS } from './lib/kdp-helper';
@@ -45,8 +46,9 @@ export default function ColoringBookStudio() {
         config: KDP_PRESETS['8.5x11'],
         stories: [],
         template: BUILT_IN_TEMPLATES[0],
-        frontMatter: ['title-page', 'copyright', 'this-book-belongs-to', 'color-test'], // Added color-test explicitly
+        frontMatter: ['title-page', 'copyright', 'this-book-belongs-to', 'color-test'],
         endMatter: ['certificate'],
+        customText: {}
     });
 
     const [currentSpread, setCurrentSpread] = useState(0);
@@ -60,7 +62,7 @@ export default function ColoringBookStudio() {
     // File inputs
     const bulkInputRef = useRef<HTMLInputElement>(null);
     const singleInputRef = useRef<HTMLInputElement>(null);
-    const logoInputRef = useRef<HTMLInputElement>(null); // NEW: Logo input
+    const logoInputRef = useRef<HTMLInputElement>(null);
     const [attachingToId, setAttachingToId] = useState<number | null>(null);
 
     // Manage illustrations mapping: { storyIndex: dataUrl }
@@ -130,6 +132,16 @@ export default function ColoringBookStudio() {
                 setProject({ ...project, endMatter: [...current, pageId] });
             }
         }
+    };
+
+    const updateCustomText = (pageId: string, text: string) => {
+        setProject(p => ({
+            ...p,
+            customText: {
+                ...p.customText,
+                [pageId]: text
+            }
+        }));
     };
 
     const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,7 +295,7 @@ export default function ColoringBookStudio() {
             <div className="flex-1 flex overflow-hidden">
                 {/* SIDEBAR */}
                 <aside className="w-96 bg-white border-r border-slate-200 overflow-y-auto z-10 shadow-sm">
-                    <Accordion type="multiple" defaultValue={['content', 'structure']} className="w-full">
+                    <Accordion type="multiple" defaultValue={['structure']} className="w-full">
 
                         {/* CONTENT */}
                         <AccordionItem value="content" className="border-b border-slate-100">
@@ -351,7 +363,6 @@ export default function ColoringBookStudio() {
                                                     </div>
                                                     <p className="text-xs text-slate-500 line-clamp-1">{story.story_text}</p>
 
-                                                    {/* Image Indicator / Upload Button */}
                                                     <div className="mt-3 flex items-center gap-2">
                                                         {illustrations[i] ? (
                                                             <div className="flex items-center gap-2 bg-green-50 text-green-700 px-2 py-1 rounded-md border border-green-100 text-xs font-medium">
@@ -400,7 +411,7 @@ export default function ColoringBookStudio() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        {/* BOOK STRUCTURE (NEW) */}
+                        {/* BOOK STRUCTURE */}
                         <AccordionItem value="structure" className="border-b border-slate-100">
                             <AccordionTrigger className="px-8 py-5 hover:no-underline hover:bg-slate-50 smooth-transition">
                                 <div className="flex items-center gap-3">
@@ -410,38 +421,48 @@ export default function ColoringBookStudio() {
                                     <span className="font-bold text-slate-800">Book Structure</span>
                                 </div>
                             </AccordionTrigger>
-                            <AccordionContent className="px-8 pb-6 space-y-4">
+                            <AccordionContent className="px-8 pb-6 space-y-6">
                                 <div className="space-y-4">
                                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Front Matter</Label>
-                                    <div className="space-y-3">
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex items-center gap-2">
-                                                <input type="checkbox"
-                                                    checked={project.frontMatter.includes('title-page')}
-                                                    onChange={() => togglePage('front', 'title-page')}
-                                                    className="rounded border-slate-300 text-indigo-600" />
-                                                <span className="text-sm font-medium">Title Page</span>
-                                            </div>
-                                            {/* Logo Upload (Only if Title Page checked) */}
-                                            {project.frontMatter.includes('title-page') && (
-                                                <div className="pl-6">
-                                                    {project.logo ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge variant="outline" className="text-xs font-normal text-slate-500">Logo Attached</Badge>
-                                                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setProject({ ...project, logo: undefined })}>
-                                                                <X className="h-3 w-3 text-red-500" />
-                                                            </Button>
-                                                        </div>
-                                                    ) : (
-                                                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => logoInputRef.current?.click()}>
-                                                            <Upload className="h-3 w-3 mr-2" />
-                                                            Upload Logo
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
 
+                                    {/* TITLE PAGE */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox"
+                                                checked={project.frontMatter.includes('title-page')}
+                                                onChange={() => togglePage('front', 'title-page')}
+                                                className="rounded border-slate-300 text-indigo-600" />
+                                            <span className="text-sm font-medium">Title Page</span>
+                                        </div>
+                                        {project.frontMatter.includes('title-page') && (
+                                            <div className="pl-6 space-y-3">
+                                                {/* Subtitle Input */}
+                                                <Input
+                                                    placeholder="Subtitle (e.g. A Story Coloring Book)"
+                                                    className="h-8 text-xs"
+                                                    value={project.customText?.['title-page'] || ''}
+                                                    onChange={(e) => updateCustomText('title-page', e.target.value)}
+                                                />
+                                                {/* Logo */}
+                                                {project.logo ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline" className="text-xs font-normal text-slate-500">Logo Attached</Badge>
+                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setProject({ ...project, logo: undefined })}>
+                                                            <X className="h-3 w-3 text-red-500" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => logoInputRef.current?.click()}>
+                                                        <Upload className="h-3 w-3 mr-2" />
+                                                        Upload Logo
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* COPYRIGHT PAGE */}
+                                    <div className="space-y-2">
                                         <div className="flex items-center gap-2">
                                             <input type="checkbox"
                                                 checked={project.frontMatter.includes('copyright')}
@@ -449,6 +470,20 @@ export default function ColoringBookStudio() {
                                                 className="rounded border-slate-300 text-indigo-600" />
                                             <span className="text-sm">Copyright Page</span>
                                         </div>
+                                        {project.frontMatter.includes('copyright') && (
+                                            <div className="pl-6">
+                                                <Textarea
+                                                    placeholder="Override Copyright Text..."
+                                                    className="h-16 text-xs resize-none"
+                                                    value={project.customText?.['copyright'] || ''}
+                                                    onChange={(e) => updateCustomText('copyright', e.target.value)}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* BELONGS TO PAGE */}
+                                    <div className="space-y-2">
                                         <div className="flex items-center gap-2">
                                             <input type="checkbox"
                                                 checked={project.frontMatter.includes('this-book-belongs-to')}
@@ -456,6 +491,20 @@ export default function ColoringBookStudio() {
                                                 className="rounded border-slate-300 text-indigo-600" />
                                             <span className="text-sm">"This Book Belongs To" Page</span>
                                         </div>
+                                        {project.frontMatter.includes('this-book-belongs-to') && (
+                                            <div className="pl-6">
+                                                <Input
+                                                    placeholder="Override Header Text..."
+                                                    className="h-8 text-xs"
+                                                    value={project.customText?.['this-book-belongs-to'] || ''}
+                                                    onChange={(e) => updateCustomText('this-book-belongs-to', e.target.value)}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* COLOR TEST PAGE */}
+                                    <div className="space-y-2">
                                         <div className="flex items-center gap-2">
                                             <input type="checkbox"
                                                 checked={project.frontMatter.includes('color-test')}
@@ -463,6 +512,16 @@ export default function ColoringBookStudio() {
                                                 className="rounded border-slate-300 text-indigo-600" />
                                             <span className="text-sm font-bold text-indigo-700">Test Colors Page</span>
                                         </div>
+                                        {project.frontMatter.includes('color-test') && (
+                                            <div className="pl-6">
+                                                <Textarea
+                                                    placeholder="Add custom guidance text..."
+                                                    className="h-16 text-xs resize-none"
+                                                    value={project.customText?.['color-test'] || ''}
+                                                    onChange={(e) => updateCustomText('color-test', e.target.value)}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -476,6 +535,16 @@ export default function ColoringBookStudio() {
                                                 className="rounded border-slate-300 text-indigo-600" />
                                             <span className="text-sm">Completion Certificate</span>
                                         </div>
+                                        {project.endMatter.includes('certificate') && (
+                                            <div className="pl-6">
+                                                <Textarea
+                                                    placeholder="Override Certificate Text..."
+                                                    className="h-16 text-xs resize-none"
+                                                    value={project.customText?.['certificate'] || ''}
+                                                    onChange={(e) => updateCustomText('certificate', e.target.value)}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -617,7 +686,12 @@ export default function ColoringBookStudio() {
                                             )}
                                             <Sparkles className="h-8 w-8 text-indigo-500 mb-4 mx-auto" />
                                             <h1 className="text-3xl font-bold text-slate-900 break-words w-full" style={{ fontFamily: fontFamilyStyle }}>{project.title}</h1>
-                                            <div className="mt-6 text-xs text-slate-400">Title Page Preview</div>
+                                            {/* Subtitle Preview */}
+                                            {project.customText?.['title-page'] ? (
+                                                <div className="mt-6 text-lg text-slate-600">{project.customText['title-page']}</div>
+                                            ) : (
+                                                <div className="mt-6 text-xs text-slate-400">Title Page Preview</div>
+                                            )}
                                         </div>
                                     ) : null}
                                 </div>

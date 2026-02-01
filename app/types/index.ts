@@ -38,5 +38,6 @@ export interface ProjectState {
     template: Template;
     frontMatter: string[];
     endMatter: string[];
-    logo?: string; // Data URL for the title page logo
+    logo?: string;
+    customText?: Record<string, string>; // Map of pageType -> Custom Text
 }
