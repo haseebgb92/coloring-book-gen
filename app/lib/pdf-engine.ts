@@ -1,38 +1,27 @@
 import jsPDF from 'jspdf';
 import { ProjectState, Story } from '../types';
 import { getPageDimensions, INCHES_TO_POINTS } from './kdp-helper';
-// import { loadFontAsBase64, RALEWAY_DOTS_URL } from './font-loader';
-// import { GOOGLE_FONTS } from './fonts';
 
 export async function generateColoringBookPDF(
     project: ProjectState,
     onProgress?: (progress: number) => void
 ): Promise<Blob> {
-    // Ensure valid dimensions
-    let { width, height } = getPageDimensions(project.config);
-    if (!width || !height) {
-        width = 8.5;
-        height = 11;
-    }
+    // 1. Calculate Dimensions in POINTS
+    let { width: widthIn, height: heightIn } = getPageDimensions(project.config);
 
+    // Safety Fallback
+    if (!widthIn || !heightIn) { widthIn = 8.5; heightIn = 11; }
+
+    const widthPt = widthIn * INCHES_TO_POINTS;
+    const heightPt = heightIn * INCHES_TO_POINTS;
+
+    // 2. Initialize PDF with POINTS unit
+    // This ensures that coordinate (306, 396) means 306 points, not 306 inches.
     const pdf = new jsPDF({
-        orientation: width > height ? 'landscape' : 'portrait',
-        unit: 'in',
-        format: [width, height],
+        orientation: widthIn > heightIn ? 'landscape' : 'portrait',
+        unit: 'pt', // CRITICAL FIX: Use Points
+        format: [widthPt, heightPt],
     });
-
-    // DISABLE CUSTOM FONTS loading completely to isolate the issue.
-    // We rely PURELY on standard Helvetica/Times/Courier.
-    /*
-    try {
-      const fontData = await loadFontAsBase64(RALEWAY_DOTS_URL);
-      const base64 = fontData.split(',')[1];
-      pdf.addFileToVFS('RalewayDots.ttf', base64);
-      pdf.addFont('RalewayDots.ttf', 'RalewayDots', 'normal');
-    } catch (e) {
-      console.warn('Failed to load dotted font', e);
-    }
-    */
 
     const activeFont = 'helvetica';
 
@@ -52,7 +41,7 @@ export async function generateColoringBookPDF(
     // Add front matter
     for (const matter of project.frontMatter) {
         pdf.addPage();
-        await addFrontMatterPage(pdf, matter, project, activeFont);
+        await addFrontMatterPage(pdf, matter, project, activeFont, widthPt, heightPt);
         updateProgress();
     }
 
@@ -67,34 +56,32 @@ export async function generateColoringBookPDF(
     for (const story of project.stories) {
         // LEFT page: Story + Writing Practice
         pdf.addPage();
-        addStoryTextPage(pdf, story, project, activeFont);
+        addStoryTextPage(pdf, story, project, activeFont, widthPt, heightPt);
         updateProgress();
 
         // RIGHT page: Illustration
         pdf.addPage();
-        await addIllustrationPage(pdf, story, project);
+        await addIllustrationPage(pdf, story, project, widthPt, heightPt);
         updateProgress();
     }
 
     // Add end matter
     for (const matter of project.endMatter) {
         pdf.addPage();
-        await addFrontMatterPage(pdf, matter, project, activeFont);
+        await addFrontMatterPage(pdf, matter, project, activeFont, widthPt, heightPt);
         updateProgress();
     }
 
     return pdf.output('blob');
 }
 
-async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectState, fontName: string) {
-    const { width, height } = getPageDimensions(project.config);
-    const w = width * INCHES_TO_POINTS;
-    const h = height * INCHES_TO_POINTS;
+// Updated Helper Functions to accept Width/Height in Points explicitly
+async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectState, fontName: string, w: number, h: number) {
 
     const customContent = project.customText?.[type];
 
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0, 0, 0); // Explicit black
+    pdf.setTextColor(0, 0, 0);
 
     if (type === 'title-page') {
         let currentY = h / 2;
@@ -112,7 +99,8 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
                     logoW = logoH * imgRatio;
                 }
                 const logoY = (h / 2) - logoH - 30;
-                pdf.addImage(project.logo, 'PNG', (w - logoW) / 2 / INCHES_TO_POINTS, logoY / INCHES_TO_POINTS, logoW / INCHES_TO_POINTS, logoH / INCHES_TO_POINTS);
+                // No division by INCHES_TO_POINTS because unit is now 'pt'
+                pdf.addImage(project.logo, 'PNG', (w - logoW) / 2, logoY, logoW, logoH);
                 currentY = h / 2 + 30;
             } catch (e) {
                 console.warn("Failed to render logo", e);
@@ -120,7 +108,6 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
         }
 
         pdf.setFontSize(32);
-        // DEBUG: console.log("Rendering Title:", project.title);
         pdf.text(project.title || "Untitled Book", w / 2, currentY, { align: 'center' });
 
         pdf.setFontSize(14);
@@ -202,10 +189,7 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
     }
 }
 
-async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectState) {
-    const { width, height } = getPageDimensions(project.config);
-    const w = width * INCHES_TO_POINTS;
-    const h = height * INCHES_TO_POINTS;
+async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectState, w: number, h: number) {
     const margin = project.config.margins;
 
     const safeAvailableW = w - (margin.inner + margin.outer) * INCHES_TO_POINTS;
@@ -243,20 +227,17 @@ async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectSta
             const imgX = frameX + padding + (innerW - finalW) / 2;
             const imgY = frameY + padding + (innerH - finalH) / 2;
 
-            pdf.addImage(story.illustration, 'PNG', imgX / INCHES_TO_POINTS, imgY / INCHES_TO_POINTS, finalW / INCHES_TO_POINTS, finalH / INCHES_TO_POINTS);
+            // No division because unit is 'pt'
+            pdf.addImage(story.illustration, 'PNG', imgX, imgY, finalW, finalH);
         } catch (e) {
             console.error("Failed to add image to PDF", e);
         }
     }
 }
 
-function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontName: string) {
-    const { width, height } = getPageDimensions(project.config);
-    const w = width * INCHES_TO_POINTS;
-    const h = height * INCHES_TO_POINTS;
+function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontName: string, w: number, h: number) {
     const margin = project.config.margins;
 
-    // Safety check on font size
     const fontSize = project.template.fontSize && project.template.fontSize > 0 ? project.template.fontSize : 12;
 
     const isEven = pdf.getNumberOfPages() % 2 === 0;
@@ -271,7 +252,6 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(24);
     pdf.setTextColor(0, 0, 0);
-    // Guard against missing title
     if (story.title) {
         pdf.text(story.title, w / 2, currentY, { align: 'center' });
     }
@@ -289,7 +269,7 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
             return;
         }
         const lines = pdf.splitTextToSize(para, contentWidth);
-        pdf.text(lines, marginLeft, currentY, { align: 'left' }); // Removed lineHeightFactor to be safe
+        pdf.text(lines, marginLeft, currentY, { align: 'left' });
         currentY += lines.length * fontSize * 1.5 + fontSize;
     });
 
@@ -303,7 +283,6 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     currentY += 30;
 
     // Words
-    // Fallback to Courier for "Dots-like" mono look since we disabled custom font
     pdf.setFont('courier', 'normal');
     pdf.setFontSize(28);
     pdf.setTextColor(100, 100, 100);
