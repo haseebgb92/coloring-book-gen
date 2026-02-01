@@ -21,19 +21,20 @@ const DecorativeLayer = ({ layout, colors, bleedPt }: {
 }) => {
     if (!layout.showIcon || !layout.iconSet) return null;
 
+    // Sizes matched to preview (px * 0.75 for pt conversion approx)
     return (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.15 }}>
-            <View style={{ position: 'absolute', top: 40 + bleedPt, left: 40 + bleedPt, transform: 'rotate(-15deg)' }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={80} />
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.25 }}>
+            <View style={{ position: 'absolute', top: 10 + bleedPt, left: 10 + bleedPt, transform: 'rotate(-15deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={48} />
             </View>
-            <View style={{ position: 'absolute', top: 40 + bleedPt, right: 40 + bleedPt, transform: 'rotate(15deg)' }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={60} />
+            <View style={{ position: 'absolute', top: 10 + bleedPt, right: 10 + bleedPt, transform: 'rotate(15deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={36} />
             </View>
-            <View style={{ position: 'absolute', bottom: 60 + bleedPt, left: 60 + bleedPt, transform: 'rotate(10deg)' }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={50} />
+            <View style={{ position: 'absolute', bottom: 30 + bleedPt, left: 15 + bleedPt, transform: 'rotate(10deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={30} />
             </View>
-            <View style={{ position: 'absolute', bottom: 80 + bleedPt, right: 60 + bleedPt, transform: 'rotate(-10deg)' }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={70} />
+            <View style={{ position: 'absolute', bottom: 35 + bleedPt, right: 15 + bleedPt, transform: 'rotate(-10deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={42} />
             </View>
         </View>
     );
@@ -143,6 +144,11 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const safeCornerRadius = Math.max(0, getNum(layout?.cornerRadius, 0));
     const borderWeight = (layout?.borderStyle && layout?.borderStyle !== 'none') ? 2 : 0;
 
+    const marginTop = (safeMargins.top * PT_PER_INCH) + bleedPt;
+    const marginBottom = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
+    const marginLeft = (safeMargins.outer * PT_PER_INCH) + bleedPt;
+    const marginRight = (safeMargins.inner * PT_PER_INCH) + bleedPt;
+
     const styles = StyleSheet.create({
         page: { backgroundColor: colors.background || '#ffffff', fontFamily: 'Helvetica' },
         text: { color: colors.storyText, fontSize: layout.bodySize || 14, lineHeight: 1.6 },
@@ -163,13 +169,14 @@ export function BookDocument({ state }: { state: ProjectState }) {
             {/* Front Matter */}
             {(state.frontMatter || []).map((page, idx) => (
                 <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
-                    <View style={{ marginTop: (safeMargins.top * PT_PER_INCH) + bleedPt, marginBottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt, marginLeft: (safeMargins.outer * PT_PER_INCH) + bleedPt, marginRight: (safeMargins.inner * PT_PER_INCH) + bleedPt, flex: 1 }}>
+                    <View style={{ marginTop: marginTop, marginBottom: marginBottom, marginLeft: marginLeft, marginRight: marginRight, flex: 1 }}>
                         <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                             {page.title && <Text style={styles.heading}>{page.title}</Text>}
                             {page.image && <View style={{ width: '80%', height: '50%', marginBottom: 20 }}><Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></View>}
                             {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
                         </ContentFrame>
                     </View>
+                    <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
                 </Page>
             ))}
 
@@ -192,7 +199,6 @@ export function BookDocument({ state }: { state: ProjectState }) {
                 return (
                     <React.Fragment key={scene.id || idx}>
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
-                            <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
                             <View style={{ marginTop: m.top, marginBottom: m.bottom, marginLeft: m.left, marginRight: m.right, flex: 1 }}>
                                 <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                                     {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
@@ -216,7 +222,8 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     </View>
                                 </ContentFrame>
                             </View>
-                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{2 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
+                            <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
+                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: m.bottom - 12, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{2 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
                         </Page>
 
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
@@ -226,7 +233,8 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderWidth: borderWeight, borderColor: colors.border, borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid', borderRadius: safeCornerRadius }} />
                                 </View>
                             </View>
-                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{3 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
+                            <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
+                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: rm.bottom - 12, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{3 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
                         </Page>
                     </React.Fragment>
                 );
@@ -235,12 +243,13 @@ export function BookDocument({ state }: { state: ProjectState }) {
             {/* Ending Pages */}
             {(state.endingPages || []).map((page, idx) => (
                 <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
-                    <View style={{ marginTop: (safeMargins.top * PT_PER_INCH) + bleedPt, marginBottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt, marginLeft: (safeMargins.outer * PT_PER_INCH) + bleedPt, marginRight: (safeMargins.inner * PT_PER_INCH) + bleedPt, flex: 1 }}>
+                    <View style={{ marginTop: marginTop, marginBottom: marginBottom, marginLeft: marginLeft, marginRight: marginRight, flex: 1 }}>
                         <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                             {page.title && <Text style={styles.heading}>{page.title}</Text>}
                             {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
                         </ContentFrame>
                     </View>
+                    <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
                 </Page>
             ))}
         </Document>
