@@ -2,7 +2,7 @@ import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet, Svg, Path, Circle, Rect } from '@react-pdf/renderer';
 import { ProjectState, Scene, PageContent, TemplateConfig, WritingPracticeSettings } from '@/lib/types';
 import { TEMPLATES, INITIAL_PROJECT_STATE } from '@/lib/templates';
-import { registerFonts } from '@/lib/fonts-config';
+import { registerFonts, REGISTERED_FONTS } from '@/lib/fonts-config';
 
 // Initialize fonts once
 registerFonts();
@@ -106,6 +106,33 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
                     <Rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill={color} />
                 </Svg>
             );
+        case 'clouds':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Path d="M17.5 19c-3.037 0-5.5-2.463-5.5-5.5 0-.115.004-.229.011-.342A3.499 3.499 0 0 1 9.5 6.5c1.018 0 1.916.435 2.536 1.13.62-1.096 1.776-1.83 3.111-1.83.655 0 1.25.176 1.76.483.424-2.812 2.85-5 5.76-5a5.992 5.992 0 0 1 5.981 5.508A3.5 3.5 0 0 1 32 10.5c0 1.933-1.567 3.5-3.5 3.5h-11z" fill={color} />
+                </Svg>
+            );
+        case 'music':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Path d="M9 18V5l12-2v13" stroke={color} strokeWidth="2" fill="none" />
+                    <Circle cx="6" cy="18" r="3" fill={color} />
+                    <Circle cx="18" cy="16" r="3" fill={color} />
+                </Svg>
+            );
+        case 'winter':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" stroke={color} strokeWidth="2" fill="none" />
+                </Svg>
+            );
+        case 'ocean':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill={color} opacity={0.3} />
+                    <Path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill={color} />
+                </Svg>
+            );
         default: return null;
     }
 };
@@ -156,7 +183,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
             color: colors.heading,
             fontSize: layout.headingSize || 30,
             marginBottom: 20,
-            fontFamily: (template.fonts.heading === 'Fredoka' || template.fonts.heading === 'Outfit') ? template.fonts.heading : 'Helvetica-Bold',
+            fontFamily: REGISTERED_FONTS.includes(template.fonts.heading) ? template.fonts.heading : 'Helvetica-Bold',
             textAlign: 'center'
         },
         practiceRow: { marginTop: 20, marginBottom: 10 },

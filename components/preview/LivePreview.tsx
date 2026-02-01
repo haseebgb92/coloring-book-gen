@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ProjectState, Scene } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight, Star, Heart, Leaf, Box, Flower, Puzzle } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight, Star, Heart, Leaf, Box, Flower, Puzzle, Cloud, Music, Snowflake, Waves } from 'lucide-react';
 
 const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
     switch (type) {
@@ -13,6 +13,10 @@ const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: strin
         case 'geometric': return <Box fill={color} stroke="none" size={size} />;
         case 'flowers': return <Flower fill={color} stroke="none" size={size} />;
         case 'puzzles': return <Puzzle fill={color} stroke="none" size={size} />;
+        case 'clouds': return <Cloud fill={color} stroke="none" size={size} />;
+        case 'music': return <Music fill={color} stroke="none" size={size} />;
+        case 'winter': return <Snowflake stroke={color} size={size} />;
+        case 'ocean': return <Waves stroke={color} size={size} />;
         default: return null;
     }
 };
