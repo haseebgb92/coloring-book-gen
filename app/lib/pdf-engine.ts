@@ -15,7 +15,7 @@ export async function generateColoringBookPDF(
         format: [width, height],
     });
 
-    // 1. Load Dotted Font (Essential - usually works)
+    // 1. Load Dotted Font (Essential)
     try {
         const fontData = await loadFontAsBase64(RALEWAY_DOTS_URL);
         const base64 = fontData.split(',')[1];
@@ -25,38 +25,8 @@ export async function generateColoringBookPDF(
         console.warn('Failed to load dotted font', e);
     }
 
-    // 2. Load Template Font logic
-    // EMERGENCY FIX: Force Helvetica to ensure text renders.
-    // Custom Google Fonts are causing blank pages due to encoding/compatibility issues in jsPDF.
-    let activeFont = 'helvetica';
-
-    /* 
-    // Custom font loading disabled temporarily to fix "Blank Pages" issue.
-    const templateFontName = project.template.fontFamily;
-    if (templateFontName && GOOGLE_FONTS[templateFontName as keyof typeof GOOGLE_FONTS]) {
-        try {
-             // ... (Previous logic)
-        } catch (e) {
-            activeFont = 'helvetica';
-        }
-    } else if (['Times', 'Courier'].includes(templateFontName)) {
-        activeFont = templateFontName;
-    }
-    */
-
-    // Map "Playful" fonts to standard fonts roughly
-    const fontMap: Record<string, string> = {
-        'Comic Neue': 'Courier',
-        'Patrick Hand': 'Courier',
-        'Fredoka': 'Helvetica',
-        'Sniglet': 'Helvetica',
-        'Indie Flower': 'Courier'
-    };
-
-    if (project.template.fontFamily && fontMap[project.template.fontFamily]) {
-        // Start with mapped standard font
-        activeFont = fontMap[project.template.fontFamily];
-    }
+    // FORCE HELVETICA - lowercase is critical for jsPDF standard fonts
+    const activeFont = 'helvetica';
 
     let currentPage = 0;
     const totalPages = project.frontMatter.length + project.stories.length * 2 + project.endMatter.length;
@@ -89,7 +59,8 @@ export async function generateColoringBookPDF(
     for (const story of project.stories) {
         // LEFT page: Story + Writing Practice
         pdf.addPage();
-        addStoryTextPage(pdf, story, project, activeFont);
+        // Explicitly forcing helvetica inside the function calls to prevent any ambiguity
+        addStoryTextPage(pdf, story, project, 'helvetica');
         updateProgress();
 
         // RIGHT page: Illustration
@@ -115,7 +86,8 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
 
     const customContent = project.customText?.[type];
 
-    pdf.setFont(fontName, 'normal');
+    // FORCE standard font
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(0);
 
     if (type === 'title-page') {
@@ -133,8 +105,10 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
                     logoH = maxLogoH;
                     logoW = logoH * imgRatio;
                 }
-                pdf.addImage(project.logo, 'PNG', (w - logoW) / 2 / INCHES_TO_POINTS, (h / 2 - logoH - 30) / INCHES_TO_POINTS, logoW / INCHES_TO_POINTS, logoH / INCHES_TO_POINTS);
-                currentY = h / 2 + 20;
+                // Adjust Y to center vertically with logo
+                const logoY = (h / 2) - logoH - 30;
+                pdf.addImage(project.logo, 'PNG', (w - logoW) / 2 / INCHES_TO_POINTS, logoY / INCHES_TO_POINTS, logoW / INCHES_TO_POINTS, logoH / INCHES_TO_POINTS);
+                currentY = h / 2 + 30; // Push title down
             } catch (e) {
                 console.warn("Failed to render logo", e);
             }
@@ -233,7 +207,6 @@ async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectSta
     const h = height * INCHES_TO_POINTS;
     const margin = project.config.margins;
 
-    // Frame size: 85%
     const safeAvailableW = w - (margin.inner + margin.outer) * INCHES_TO_POINTS;
     const safeAvailableH = h - (margin.top + margin.bottom) * INCHES_TO_POINTS;
     const frameW = safeAvailableW * 0.85;
@@ -290,14 +263,14 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
 
     let currentY = margin.top * INCHES_TO_POINTS + 40;
 
-    // Title
-    pdf.setFont(fontName, 'normal');
+    // Title - FORCE HELVETICA
+    pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(24);
     pdf.setTextColor(0);
     pdf.text(story.title, w / 2, currentY, { align: 'center' });
     currentY += 40;
 
-    // Story Text
+    // Story Text - FORCE HELVETICA
     pdf.setFontSize(fontSize);
     pdf.setTextColor(0);
 
@@ -322,18 +295,26 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     currentY += 30;
 
     // Words
-    pdf.setFont('RalewayDots', 'normal');
+    // Use Raleway Dots if possible, fallback logic:
+    // RalewayDots was added in main function with 'normal'.
+    try {
+        pdf.setFont('RalewayDots', 'normal');
+    } catch {
+        pdf.setFont('helvetica', 'normal'); // dashed fallback?
+    }
     pdf.setFontSize(28);
     pdf.setTextColor(100);
 
     const practiceWords = story.writing_words.slice(0, 5);
     practiceWords.forEach((word) => {
+        // Guide Line
         pdf.setDrawColor(180);
         pdf.setLineWidth(0.5);
         pdf.setLineDash([2, 2], 0);
         pdf.line(marginLeft, currentY + 6, w - marginRight, currentY + 6);
         pdf.setLineDash([], 0);
 
+        // 3x Repetition
         const sectionW = contentWidth / 3;
         pdf.text(word, marginLeft + sectionW * 0.5, currentY, { align: 'center' });
         pdf.text(word, marginLeft + sectionW * 1.5, currentY, { align: 'center' });
