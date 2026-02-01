@@ -1,27 +1,64 @@
 import React from 'react';
-import { Document, Page, Text, View, Image, StyleSheet, Font, Svg, Path, Circle, Rect } from '@react-pdf/renderer';
-import { ProjectState, Scene } from '@/lib/types';
+import { Document, Page, Text, View, Image, StyleSheet, Svg, Path, Circle, Rect } from '@react-pdf/renderer';
+import { ProjectState, Scene, PageContent, TemplateConfig, WritingPracticeSettings } from '@/lib/types';
 import { TEMPLATES, INITIAL_PROJECT_STATE } from '@/lib/templates';
+import { registerFonts } from '@/lib/fonts-config';
 
-// Register Fonts with CORS-friendly CDN (jsDelivr)
-Font.register({
-    family: 'Codystar',
-    src: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/codystar/Codystar-Regular.ttf'
-});
-
-Font.register({
-    family: 'Fredoka',
-    src: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/fredoka/static/Fredoka-Bold.ttf'
-});
-
-Font.register({
-    family: 'Outfit',
-    src: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/outfit/static/Outfit-Bold.ttf'
-});
+// Initialize fonts once
+registerFonts();
 
 const PT_PER_INCH = 72;
 
-// Decorative Components for PDF
+// --- Helper Components (Isolation) ---
+
+/**
+ * Renders decorative icons in the background of the page
+ */
+const DecorativeLayer = ({ layout, colors, bleedPt }: {
+    layout: TemplateConfig['layout'],
+    colors: TemplateConfig['colors'],
+    bleedPt: number
+}) => {
+    if (!layout.showIcon || !layout.iconSet) return null;
+
+    return (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.15 }} pointerEvents="none">
+            <View style={{ position: 'absolute', top: 40 + bleedPt, left: 40 + bleedPt, transform: 'rotate(-15deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={80} />
+            </View>
+            <View style={{ position: 'absolute', top: 40 + bleedPt, right: 40 + bleedPt, transform: 'rotate(15deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={60} />
+            </View>
+            <View style={{ position: 'absolute', bottom: 60 + bleedPt, left: 60 + bleedPt, transform: 'rotate(10deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={50} />
+            </View>
+            <View style={{ position: 'absolute', bottom: 80 + bleedPt, right: 60 + bleedPt, transform: 'rotate(-10deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={70} />
+            </View>
+        </View>
+    );
+};
+
+/**
+ * Standard content frame used for story and front/end matter
+ */
+const ContentFrame = ({ children, colors, layout, safeCornerRadius, borderWeight }: any) => (
+    <View style={{ flex: 1, position: 'relative' }}>
+        <View style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            borderWidth: borderWeight,
+            borderColor: colors.border,
+            borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
+            borderRadius: safeCornerRadius,
+            backgroundColor: '#ffffff'
+        }} />
+        <View style={{ flex: 1, padding: 30, alignItems: 'center' }}>
+            {children}
+        </View>
+    </View>
+);
+
 const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
     switch (type) {
         case 'stars':
@@ -72,30 +109,25 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
     }
 };
 
+// --- Main Document ---
+
 export function BookDocument({ state }: { state: ProjectState }) {
-    // Sanitization and Defaults
     const printSettings = state?.printSettings || INITIAL_PROJECT_STATE.printSettings;
     const scenes = state?.scenes || [];
     const template = state?.template || TEMPLATES[0];
     const writingSettings = state?.writingSettings || INITIAL_PROJECT_STATE.writingSettings;
 
     const { trimSize, bleed, margins } = printSettings;
-    const colors = template?.colors || TEMPLATES[0].colors;
-    const layout = template?.layout || TEMPLATES[0].layout;
+    const colors = template?.colors;
+    const layout = template?.layout;
 
-    // Calculate dimensions
-    const [widthIn, heightIn] = trimSize === '6x9' ? [6, 9] :
-        trimSize === '8x10' ? [8, 10] : [8.5, 11];
-
+    const [widthIn, heightIn] = trimSize === '6x9' ? [6, 9] : trimSize === '8x10' ? [8, 10] : [8.5, 11];
     const width = widthIn * PT_PER_INCH;
     const height = heightIn * PT_PER_INCH;
-
     const bleedPt = bleed ? 0.125 * PT_PER_INCH : 0;
-
     const pageWidth = width + (bleed ? bleedPt * 2 : 0);
     const pageHeight = height + (bleed ? bleedPt * 2 : 0);
 
-    // Safe Value Helpers
     const getNum = (val: any, fallback: number) => {
         const n = Number(val);
         return (typeof val === 'number' || typeof val === 'string') && !isNaN(n) ? n : fallback;
@@ -111,261 +143,90 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const safeCornerRadius = Math.max(0, getNum(layout?.cornerRadius, 0));
     const borderWeight = (layout?.borderStyle && layout?.borderStyle !== 'none') ? 2 : 0;
 
-    const marginTop = (safeMargins.top * PT_PER_INCH) + bleedPt;
-    const marginBottom = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
-    const marginLeft = (safeMargins.outer * PT_PER_INCH) + bleedPt;
-    const marginRight = (safeMargins.inner * PT_PER_INCH) + bleedPt;
-
     const styles = StyleSheet.create({
-        page: {
-            backgroundColor: colors.background || '#ffffff',
-            fontFamily: 'Helvetica',
-        },
-        text: {
-            color: colors.storyText || '#000000',
-            fontSize: layout.bodySize || 14,
-            lineHeight: 1.6,
-        },
+        page: { backgroundColor: colors.background || '#ffffff', fontFamily: 'Helvetica' },
+        text: { color: colors.storyText, fontSize: layout.bodySize || 14, lineHeight: 1.6 },
         heading: {
-            color: colors.heading || '#000000',
+            color: colors.heading,
             fontSize: layout.headingSize || 30,
             marginBottom: 20,
-            fontFamily: (template.fonts.heading === 'Fredoka' || template.fonts.heading === 'Outfit')
-                ? template.fonts.heading
-                : 'Helvetica-Bold',
+            fontFamily: (template.fonts.heading === 'Fredoka' || template.fonts.heading === 'Outfit') ? template.fonts.heading : 'Helvetica-Bold',
             textAlign: 'center'
         },
-        practiceRow: {
-            marginTop: 20,
-            marginBottom: 10,
-        },
-        practiceWord: {
-            fontSize: writingSettings.practiceFontSize || 28,
-            color: colors.tracing || '#9ca3af',
-            fontFamily: 'Codystar',
-            marginRight: 30,
-        },
-        writingLine: {
-            borderBottomWidth: 1,
-            borderBottomColor: colors.writingLine || '#e5e7eb',
-            borderBottomStyle: 'solid',
-            position: 'absolute',
-            left: 0, right: 0,
-            height: 1,
-        }
+        practiceRow: { marginTop: 20, marginBottom: 10 },
+        practiceWord: { fontSize: writingSettings.practiceFontSize || 28, color: colors.tracing, fontFamily: 'Codystar', marginRight: 30 },
+        writingLine: { borderBottomWidth: 1, borderBottomColor: colors.writingLine, borderBottomStyle: 'solid', position: 'absolute', left: 0, right: 0, height: 1 }
     });
 
     return (
         <Document title={state.name || 'Coloring Book'}>
-            {/* Front Matter Pages */}
+            {/* Front Matter */}
             {(state.frontMatter || []).map((page, idx) => (
                 <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
-                    <View style={{
-                        marginTop: marginTop,
-                        marginBottom: marginBottom,
-                        marginLeft: marginLeft,
-                        marginRight: marginRight,
-                        flex: 1,
-                        position: 'relative'
-                    }}>
-                        <View style={{
-                            position: 'absolute',
-                            top: 0, left: 0, right: 0, bottom: 0,
-                            borderWidth: borderWeight,
-                            borderColor: colors.border,
-                            borderRadius: safeCornerRadius,
-                            backgroundColor: '#ffffff'
-                        }} />
-                        <View style={{ flex: 1, padding: 30, justifyContent: 'center', alignItems: 'center' }}>
-                            {page.title && <Text style={[styles.heading, { color: colors.heading }]}>{page.title}</Text>}
-                            {page.image && (page.image.startsWith('data:') || page.image.startsWith('http') || page.image.startsWith('blob:')) ? (
-                                <View style={{ width: '80%', height: '50%', marginBottom: 20 }}>
-                                    <Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                </View>
-                            ) : (
-                                page.image && <Text style={{ fontSize: 10, color: '#9ca3af', marginBottom: 10 }}>[Image: {page.image}]</Text>
-                            )}
-                            {page.text && <Text style={[styles.text, { textAlign: 'center', color: colors.storyText }]}>{page.text}</Text>}
-                        </View>
+                    <View style={{ marginTop: (safeMargins.top * PT_PER_INCH) + bleedPt, marginBottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt, marginLeft: (safeMargins.outer * PT_PER_INCH) + bleedPt, marginRight: (safeMargins.inner * PT_PER_INCH) + bleedPt, flex: 1 }}>
+                        <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
+                            {page.title && <Text style={styles.heading}>{page.title}</Text>}
+                            {page.image && <View style={{ width: '80%', height: '50%', marginBottom: 20 }}><Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></View>}
+                            {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
+                        </ContentFrame>
                     </View>
                 </Page>
             ))}
 
-            {/* Main Scenes */}
+            {/* Scenes */}
             {(scenes || []).map((scene, idx) => {
                 const isOdd = (idx * 2 + (state.frontMatter?.length || 0)) % 2 !== 0;
-
-                const leftMargins = {
+                const m = {
                     top: (safeMargins.top * PT_PER_INCH) + bleedPt,
                     bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
                     left: (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
                     right: (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
-
-                const rightMargins = {
+                const rm = {
                     top: (safeMargins.top * PT_PER_INCH) + bleedPt,
                     bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
                     left: (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
                     right: (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
 
-                if (!scene) return null;
-
                 return (
                     <React.Fragment key={scene.id || idx}>
-                        {/* Left Page: Story + Words */}
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
-                            {/* Decorative Ornaments Layer */}
-                            {layout.showIcon && layout.iconSet && (
-                                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.15 }}>
-                                    <View style={{ position: 'absolute', top: 40 + bleedPt, left: 40 + bleedPt, transform: 'rotate(-15deg)' }}>
-                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={80} />
-                                    </View>
-                                    <View style={{ position: 'absolute', top: 40 + bleedPt, right: 40 + bleedPt, transform: 'rotate(15deg)' }}>
-                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={60} />
-                                    </View>
-                                    <View style={{ position: 'absolute', bottom: 60 + bleedPt, left: 60 + bleedPt, transform: 'rotate(10deg)' }}>
-                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={50} />
-                                    </View>
-                                    <View style={{ position: 'absolute', bottom: 80 + bleedPt, right: 60 + bleedPt, transform: 'rotate(-10deg)' }}>
-                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={70} />
-                                    </View>
-                                </View>
-                            )}
-
-                            <View style={{
-                                marginTop: leftMargins.top,
-                                marginBottom: leftMargins.bottom,
-                                marginLeft: leftMargins.left,
-                                marginRight: leftMargins.right,
-                                flex: 1,
-                                position: 'relative'
-                            }}>
-                                {/* Story Area Frame */}
-                                <View style={{
-                                    position: 'absolute',
-                                    top: 0, left: 0, right: 0, bottom: 0,
-                                    borderWidth: borderWeight,
-                                    borderColor: colors.border,
-                                    borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                    borderRadius: safeCornerRadius,
-                                    backgroundColor: '#ffffff'
-                                }} />
-
-                                <View style={{ flex: 1, padding: 30, alignItems: 'center' }}>
-                                    {scene.title && <Text style={[styles.heading, { color: colors.heading }]}>{scene.title}</Text>}
+                            <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
+                            <View style={{ marginTop: m.top, marginBottom: m.bottom, marginLeft: m.left, marginRight: m.right, flex: 1 }}>
+                                <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
+                                    {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
                                     {layout.showIcon && <View style={{ height: 1, width: 80, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 20 }} />}
-                                    {scene.story && <Text style={[styles.text, { textAlign: 'center', color: colors.storyText }]}>{scene.story}</Text>}
-
+                                    {scene.story && <Text style={[styles.text, { textAlign: 'center' }]}>{scene.story}</Text>}
                                     <View style={{ marginTop: 40, width: '100%' }}>
-                                        {(scene.words || []).map((word, wIdx) => (
+                                        {scene.words?.map((word, wIdx) => (
                                             <View key={wIdx} style={styles.practiceRow}>
                                                 <View style={{ position: 'relative', height: 45, width: '100%', marginBottom: 8 }}>
-                                                    {writingSettings.guidelines.showTop && (
-                                                        <View style={[styles.writingLine, { top: 0, borderBottomColor: colors.writingLine }]} />
-                                                    )}
-                                                    {writingSettings.guidelines.showMid && (
-                                                        <View style={[styles.writingLine, { top: 22.5, borderBottomStyle: 'dashed', borderBottomColor: colors.writingLine }]} />
-                                                    )}
-                                                    {writingSettings.guidelines.showBase && (
-                                                        <View style={[styles.writingLine, { top: 45, borderBottomColor: colors.writingLine }]} />
-                                                    )}
+                                                    {writingSettings.guidelines.showTop && <View style={[styles.writingLine, { top: 0 }]} />}
+                                                    {writingSettings.guidelines.showMid && <View style={[styles.writingLine, { top: 22.5, borderBottomStyle: 'dashed' }]} />}
+                                                    {writingSettings.guidelines.showBase && <View style={[styles.writingLine, { top: 45 }]} />}
                                                     <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 10 }}>
                                                         {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
-                                                            <View key={rIdx} style={{ marginRight: 30 }}>
-                                                                <Text style={[styles.practiceWord, { color: colors.tracing }]}>
-                                                                    {word || ''}
-                                                                </Text>
-                                                            </View>
+                                                            <Text key={rIdx} style={styles.practiceWord}>{word}</Text>
                                                         ))}
                                                     </View>
                                                 </View>
                                             </View>
                                         ))}
                                     </View>
-                                </View>
+                                </ContentFrame>
                             </View>
-
-                            {/* Page Number */}
-                            {printSettings.pageNumbers.enabled && (
-                                <Text style={{
-                                    position: 'absolute',
-                                    bottom: 20,
-                                    left: 0, right: 0,
-                                    textAlign: 'center',
-                                    color: colors.pageNumber,
-                                    fontSize: 10
-                                }}>
-                                    {2 + (state.frontMatter?.length || 0) + (idx * 2)}
-                                </Text>
-                            )}
+                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{2 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
                         </Page>
 
-                        {/* Right Page: Illustration */}
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
-                            <View style={{
-                                marginTop: rightMargins.top,
-                                marginBottom: rightMargins.bottom,
-                                marginLeft: rightMargins.left,
-                                marginRight: rightMargins.right,
-                                flex: 1,
-                                justifyContent: 'center',
-                                alignItems: 'center'
-                            }}>
-                                <View style={{
-                                    width: pageWidth - (rightMargins.left + rightMargins.right),
-                                    height: pageHeight - (rightMargins.top + rightMargins.bottom),
-                                    backgroundColor: '#ffffff',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    borderRadius: safeCornerRadius,
-                                }}>
-                                    {/* Image Layer */}
-                                    {scene.illustration && (scene.illustration.startsWith('data:') || scene.illustration.startsWith('http') || scene.illustration.startsWith('blob:')) ? (
-                                        <Image
-                                            src={scene.illustration}
-                                            style={{
-                                                position: 'absolute',
-                                                top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`,
-                                                left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`,
-                                                width: `${getNum(scene.illustrationScale, 1.05) * 100}%`,
-                                                height: `${getNum(scene.illustrationScale, 1.05) * 100}%`,
-                                                objectFit: 'cover'
-                                            }}
-                                        />
-                                    ) : (
-                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                                            <Text style={{ color: '#9ca3af', fontSize: 10, textAlign: 'center' }}>
-                                                {scene.illustration || 'No Illustration'}
-                                            </Text>
-                                        </View>
-                                    )}
-
-                                    {/* Frame/Border Layer (On Top) */}
-                                    <View style={{
-                                        position: 'absolute',
-                                        top: 0, left: 0, right: 0, bottom: 0,
-                                        borderWidth: borderWeight,
-                                        borderColor: colors.border,
-                                        borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                        borderRadius: safeCornerRadius,
-                                    }} />
+                            <View style={{ marginTop: rm.top, marginBottom: rm.bottom, marginLeft: rm.left, marginRight: rm.right, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <View style={{ width: pageWidth - (rm.left + rm.right), height: pageHeight - (rm.top + rm.bottom), backgroundColor: '#ffffff', position: 'relative', overflow: 'hidden', borderRadius: safeCornerRadius }}>
+                                    {scene.illustration && <Image src={scene.illustration} style={{ position: 'absolute', top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`, left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`, width: `${getNum(scene.illustrationScale, 1.05) * 100}%`, height: `${getNum(scene.illustrationScale, 1.05) * 100}%`, objectFit: 'cover' }} />}
+                                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderWidth: borderWeight, borderColor: colors.border, borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid', borderRadius: safeCornerRadius }} />
                                 </View>
                             </View>
-
-                            {/* Page Number */}
-                            {printSettings.pageNumbers.enabled && (
-                                <Text style={{
-                                    position: 'absolute',
-                                    bottom: 20,
-                                    left: 0, right: 0,
-                                    textAlign: 'center',
-                                    color: colors.pageNumber,
-                                    fontSize: 10
-                                }}>
-                                    {3 + (state.frontMatter?.length || 0) + (idx * 2)}
-                                </Text>
-                            )}
+                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{3 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
                         </Page>
                     </React.Fragment>
                 );
@@ -374,26 +235,11 @@ export function BookDocument({ state }: { state: ProjectState }) {
             {/* Ending Pages */}
             {(state.endingPages || []).map((page, idx) => (
                 <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
-                    <View style={{
-                        marginTop: marginTop,
-                        marginBottom: marginBottom,
-                        marginLeft: marginLeft,
-                        marginRight: marginRight,
-                        flex: 1,
-                        position: 'relative'
-                    }}>
-                        <View style={{
-                            position: 'absolute',
-                            top: 0, left: 0, right: 0, bottom: 0,
-                            borderWidth: borderWeight,
-                            borderColor: colors.border,
-                            borderRadius: safeCornerRadius,
-                            backgroundColor: '#ffffff'
-                        }} />
-                        <View style={{ flex: 1, padding: 30, justifyContent: 'center', alignItems: 'center' }}>
-                            {page.title && <Text style={[styles.heading, { color: colors.heading }]}>{page.title}</Text>}
-                            {page.text && <Text style={[styles.text, { textAlign: 'center', color: colors.storyText }]}>{page.text}</Text>}
-                        </View>
+                    <View style={{ marginTop: (safeMargins.top * PT_PER_INCH) + bleedPt, marginBottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt, marginLeft: (safeMargins.outer * PT_PER_INCH) + bleedPt, marginRight: (safeMargins.inner * PT_PER_INCH) + bleedPt, flex: 1 }}>
+                        <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
+                            {page.title && <Text style={styles.heading}>{page.title}</Text>}
+                            {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
+                        </ContentFrame>
                     </View>
                 </Page>
             ))}
