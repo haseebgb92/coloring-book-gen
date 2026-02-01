@@ -140,13 +140,37 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
                     style={pageStyle}
                 >
+                    {/* Visual Bleed Guide (Overlay) */}
+                    {printSettings.bleed && (
+                        <div className="absolute inset-0 pointer-events-none z-50 border border-red-400 border-dashed"
+                            style={{
+                                left: `${0.125 * 96 * scale}px`,
+                                top: `${0.125 * 96 * scale}px`,
+                                right: `${0.125 * 96 * scale}px`,
+                                bottom: `${0.125 * 96 * scale}px`,
+                            }}
+                        >
+                            <div className="absolute top-0 left-0 bg-red-500 text-white text-[8px] px-1">Safe Area Boundary</div>
+                        </div>
+                    )}
+
                     <div className="w-full h-full" style={rightContentStyle}>
-                        <div className="w-full h-full relative bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
+                        <div
+                            className="w-full h-full relative flex items-center justify-center overflow-hidden"
+                            style={{
+                                borderRadius: `${template.layout.cornerRadius}px`,
+                                border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
+                                backgroundColor: '#ffffff'
+                            }}
+                        >
                             {currentScene.illustration ? (
                                 <img
                                     src={currentScene.illustration}
                                     className="w-full h-full"
-                                    style={{ objectFit: currentScene.illustrationFit || 'cover' }}
+                                    style={{
+                                        objectFit: currentScene.illustrationFit || 'contain',
+                                        padding: '1rem'
+                                    }}
                                 />
                             ) : (
                                 <div className="text-gray-300 flex flex-col items-center">

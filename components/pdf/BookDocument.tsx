@@ -179,35 +179,56 @@ export function BookDocument({ state }: { state: ProjectState }) {
 
                         {/* Right Page: Illustration */}
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
-                            <View style={{ width: '100%', height: '100%', position: 'relative' }}>
-                                {scene.illustration ? (
-                                    <Image
-                                        src={scene.illustration}
-                                        style={{
-                                            width: '100%',
-                                            height: '100%',
-                                            objectFit: scene.illustrationFit || 'cover'
-                                        }}
-                                    />
-                                ) : (
-                                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
+                            {/* Bleed/Margins container */}
+                            <View style={{
+                                marginTop: rightMargins.top,
+                                marginBottom: rightMargins.bottom,
+                                marginLeft: rightMargins.left,
+                                marginRight: rightMargins.right,
+                                flex: 1,
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                            }}>
+                                {/* The Frame */}
+                                <View style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    borderWidth: template.layout.borderStyle !== 'none' ? 2 : 0,
+                                    borderColor: template.colors.border,
+                                    borderStyle: template.layout.borderStyle === 'dashed' ? 'dashed' : 'solid',
+                                    borderRadius: template.layout.cornerRadius, // ReactPDF supports cornerRadius
+                                    padding: 10, // Inner padding
+                                    justifyContent: 'center',
+                                    alignItems: 'center'
+                                }}>
+                                    {scene.illustration ? (
+                                        <Image
+                                            src={scene.illustration}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'contain'
+                                            }}
+                                        />
+                                    ) : (
                                         <Text style={{ color: '#9ca3af' }}>No Illustration</Text>
-                                    </View>
-                                )}
-                                {/* Page Number */}
-                                {printSettings.pageNumbers.enabled && (
-                                    <Text style={{
-                                        position: 'absolute',
-                                        bottom: 20,
-                                        left: 0, right: 0,
-                                        textAlign: 'center',
-                                        color: template.colors.pageNumber,
-                                        fontSize: 10
-                                    }}>
-                                        {3 + (idx * 2)}
-                                    </Text>
-                                )}
+                                    )}
+                                </View>
                             </View>
+
+                            {/* Page Number */}
+                            {printSettings.pageNumbers.enabled && (
+                                <Text style={{
+                                    position: 'absolute',
+                                    bottom: 20,
+                                    left: 0, right: 0,
+                                    textAlign: 'center',
+                                    color: template.colors.pageNumber,
+                                    fontSize: 10
+                                }}>
+                                    {3 + (idx * 2)}
+                                </Text>
+                            )}
                         </Page>
                     </React.Fragment>
                 )
