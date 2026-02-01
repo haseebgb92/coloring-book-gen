@@ -34,22 +34,7 @@ export function PreviewPane() {
                     <span className="text-gray-500">{projectState.printSettings.trimSize}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                    {/* Download Link */}
-                    <PDFDownloadLink document={<BookDocument state={projectState} />} fileName={`${projectState.name.replace(/\s+/g, '-').toLowerCase()}.pdf`}>
-                        {({ blob, url, loading, error }) =>
-                            loading ? (
-                                <button className="flex items-center gap-2 bg-gray-300 text-gray-600 px-3 py-1.5 rounded cursor-wait">
-                                    <Download className="w-3 h-3" />
-                                    Preparing...
-                                </button>
-                            ) : (
-                                <button className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition shadow-sm font-medium">
-                                    <Download className="w-3 h-3" />
-                                    Download PDF
-                                </button>
-                            )
-                        }
-                    </PDFDownloadLink>
+                    <span className="text-[10px] text-gray-400 italic">Centralized export in Sidebar</span>
                 </div>
             </div>
             <div className="flex-1 bg-gray-500 rounded-b-lg overflow-hidden shadow-lg relative border border-gray-300">

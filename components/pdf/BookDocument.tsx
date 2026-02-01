@@ -206,10 +206,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                             src={scene.illustration}
                                             style={{
                                                 position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                width: '100%',
-                                                height: '100%',
+                                                top: '-2.5%',
+                                                left: '-2.5%',
+                                                width: '105%',
+                                                height: '105%',
                                                 objectFit: 'cover'
                                             }}
                                         />

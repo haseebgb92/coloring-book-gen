@@ -5,7 +5,8 @@ import { useProjectStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import {
     Folder, FileText, Layers, Settings, Palette, Type,
-    BookOpen, FileOutput, CheckCircle, AlertTriangle, Layout, Hash
+    BookOpen, FileOutput, CheckCircle, AlertTriangle, Layout, Hash,
+    Save, Upload
 } from 'lucide-react';
 import { ProjectSection } from './ProjectSection';
 import { PasteScenesSection } from './PasteScenesSection';
@@ -82,7 +83,7 @@ export function Sidebar({ className }: { className?: string }) {
                         Autosaved
                     </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                     <button
                         onClick={() => { if (confirm('Start a new book? All unsaved changes will be lost.')) resetProject(); }}
                         className="flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg hover:bg-red-50 hover:border-red-200 transition-all group"
@@ -96,7 +97,7 @@ export function Sidebar({ className }: { className?: string }) {
                         className="flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-all group"
                         title="Save Project"
                     >
-                        <FileOutput className="w-4 h-4 text-gray-400 group-hover:text-blue-500 mb-1" />
+                        <Save className="w-4 h-4 text-gray-400 group-hover:text-blue-500 mb-1" />
                         <span className="text-[10px] text-gray-600 group-hover:text-blue-700">Save</span>
                     </button>
                     <div className="relative">
@@ -107,13 +108,21 @@ export function Sidebar({ className }: { className?: string }) {
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
                         <button
-                            className="w-full flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg pointer-events-none group"
+                            className="w-full flex h-full flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg pointer-events-none group"
                             title="Load Project"
                         >
-                            <Layers className="w-4 h-4 text-gray-400 group-hover:text-amber-500 mb-1" />
+                            <Upload className="w-4 h-4 text-gray-400 group-hover:text-amber-500 mb-1" />
                             <span className="text-[10px] text-gray-600 group-hover:text-amber-700">Load</span>
                         </button>
                     </div>
+                    <button
+                        onClick={() => setActiveSection('export')}
+                        className="flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-200 transition-all group"
+                        title="Export PDF"
+                    >
+                        <FileOutput className="w-4 h-4 text-gray-400 group-hover:text-green-500 mb-1" />
+                        <span className="text-[10px] text-gray-600 group-hover:text-green-700">Export</span>
+                    </button>
                 </div>
             </div>
 
