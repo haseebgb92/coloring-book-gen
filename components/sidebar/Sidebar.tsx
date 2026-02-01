@@ -6,9 +6,9 @@ import { cn } from '@/lib/utils';
 import {
     Folder, FileText, Layers, Settings, Palette, Type,
     BookOpen, FileOutput, CheckCircle, AlertTriangle, Layout, Hash,
-    Save, Upload, Loader2, Cloud, CheckCircle2
+    Save, Upload, Loader2, Cloud, CheckCircle2, History, RotateCcw
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProjectSection } from './ProjectSection';
 import { PasteScenesSection } from './PasteScenesSection';
 import { ScenesSection } from './ScenesSection';
@@ -27,6 +27,42 @@ export function Sidebar({ className }: { className?: string }) {
     const state = useProjectStore(s => s);
     const [isSaving, setIsSaving] = useState(false);
     const [showSavedMsg, setShowSavedMsg] = useState(false);
+    const [history, setHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+    const loadProject = useProjectStore(s => s.loadProject);
+
+    const handleFetchHistory = async () => {
+        if (!state.id) return;
+        setLoadingHistory(true);
+        setShowHistory(true);
+        try {
+            const res = await fetch(`/api/project?id=${state.id}&listHistory=true`);
+            if (res.ok) {
+                const data = await res.json();
+                setHistory(data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch history', err);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
+    const handleRestore = async (version: number) => {
+        if (!confirm('Restore this version? current unsaved changes will be replaced.')) return;
+        try {
+            const res = await fetch(`/api/project?id=${state.id}&version=${version}`);
+            if (res.ok) {
+                const data = await res.json();
+                loadProject(data);
+                setShowHistory(false);
+                alert('Version restored!');
+            }
+        } catch (err) {
+            alert('Failed to restore version');
+        }
+    };
 
     const handleCloudSave = async () => {
         if (isSaving) return;
@@ -125,20 +161,30 @@ export function Sidebar({ className }: { className?: string }) {
                         )}
                         <span className="text-[10px] text-gray-600 group-hover:text-emerald-700">Save</span>
                     </button>
-                    <div className="relative">
+                    <div className="relative group/load">
                         <input
                             type="file"
                             accept=".json"
                             onChange={handleImportJSON}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            className="absolute inset-x-0 top-0 h-1/2 opacity-0 cursor-pointer z-10"
                         />
-                        <button
-                            className="w-full flex h-full flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg pointer-events-none group"
-                            title="Load Project"
-                        >
-                            <Upload className="w-4 h-4 text-gray-400 group-hover:text-amber-500 mb-1" />
-                            <span className="text-[10px] text-gray-600 group-hover:text-amber-700">Load</span>
-                        </button>
+                        <div className="grid grid-rows-2 h-full">
+                            <button
+                                className="flex flex-col items-center justify-center p-1 bg-white border border-gray-200 rounded-t-lg pointer-events-none group-hover/load:bg-amber-50 group-hover/load:border-amber-200 transition-all"
+                                title="Import JSON File"
+                            >
+                                <Upload className="w-3 h-3 text-gray-400 group-hover/load:text-amber-500" />
+                                <span className="text-[8px] text-gray-600">File</span>
+                            </button>
+                            <button
+                                onClick={handleFetchHistory}
+                                className="flex flex-col items-center justify-center p-1 bg-white border border-t-0 border-gray-200 rounded-b-lg hover:bg-indigo-50 hover:border-indigo-200 transition-all group"
+                                title="Cloud History"
+                            >
+                                <History className="w-3 h-3 text-gray-400 group-hover:text-indigo-500" />
+                                <span className="text-[8px] text-gray-600">Cloud</span>
+                            </button>
+                        </div>
                     </div>
                     <button
                         onClick={() => setActiveSection('export')}
@@ -149,6 +195,43 @@ export function Sidebar({ className }: { className?: string }) {
                         <span className="text-[10px] text-gray-600 group-hover:text-green-700">Export</span>
                     </button>
                 </div>
+
+                {/* Cloud History Overlay */}
+                {showHistory && (
+                    <div className="absolute top-[160px] left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-4 animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-[10px] font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                                <History className="w-3 h-3 text-indigo-500" /> Recent Cloud Versions
+                            </h4>
+                            <button onClick={() => setShowHistory(false)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+                        </div>
+
+                        <div className="space-y-2">
+                            {loadingHistory ? (
+                                <div className="flex items-center justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-blue-500" /></div>
+                            ) : history.length === 0 ? (
+                                <p className="text-[10px] text-gray-400 italic text-center py-2">No history found for this project ID.</p>
+                            ) : (
+                                history.map((v, i) => (
+                                    <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-100 group">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-700">{i === 0 ? 'Current / Latest' : `Version ${i + 1}`}</p>
+                                            <p className="text-[9px] text-gray-400">{new Date(v.lastModified).toLocaleString()}</p>
+                                            <p className="text-[8px] text-indigo-500 font-medium">{v.sceneCount} Scenes</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleRestore(v.version)}
+                                            className="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                        >
+                                            Restore
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <p className="text-[8px] text-gray-400 text-center mt-3 border-t pt-2 italic">Keeps up to 3 most recent saves</p>
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto">

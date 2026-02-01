@@ -2,7 +2,7 @@ import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 
 /**
- * API to Save Project JSON to Vercel KV with History
+ * API to Save Project JSON to Vercel KV with History and Indexing
  */
 export async function POST(req: Request) {
     try {
@@ -14,22 +14,31 @@ export async function POST(req: Request) {
 
         if (!process.env.KV_REST_API_URL) {
             return NextResponse.json({
-                error: 'Vercel KV not configured. Please link a KV database.'
+                error: 'Vercel KV not configured.'
             }, { status: 500 });
         }
 
         // 1. Update the "latest" version
         await kv.set(`project:${project.id}`, project);
 
-        // 2. Manage history/versions list
-        // We use a Redis LIST to store the last 3 versions of the project JSON
+        // 2. Manage history/versions list (last 3)
         const historyKey = `history:${project.id}`;
-
-        // Push the stringified project to the front of the list
-        await kv.lpush(historyKey, project);
-
-        // Keep only the most recent 3 entries
+        await kv.lpush(historyKey, JSON.stringify(project));
         await kv.ltrim(historyKey, 0, 2);
+
+        // 3. Maintain Global Index for Gallery
+        // We store metadata: { id, name, lastModified, sceneCount, thumbnailData? }
+        const metadata = {
+            id: project.id,
+            name: project.name || 'Untitled Book',
+            lastModified: project.lastModified || Date.now(),
+            sceneCount: project.scenes?.length || 0,
+            templateId: project.template?.id,
+            colors: project.template?.colors
+        };
+
+        // Use a HASH to store project metadata for quick listing
+        await kv.hset('projects:metadata', { [project.id]: JSON.stringify(metadata) });
 
         return NextResponse.json({
             success: true,
@@ -44,29 +53,58 @@ export async function POST(req: Request) {
 }
 
 /**
- * API to Load Project JSON from Vercel KV
+ * API to Load Project JSON or List Projects
  */
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
-        const version = searchParams.get('version'); // Optional: index 0, 1, or 2
-
-        if (!id) {
-            return NextResponse.json({ error: 'Missing project ID' }, { status: 400 });
-        }
+        const listAll = searchParams.get('list');
+        const version = searchParams.get('version');
+        const listHistory = searchParams.get('listHistory');
 
         if (!process.env.KV_REST_API_URL) {
             return NextResponse.json({ error: 'Vercel KV not configured' }, { status: 500 });
         }
 
+        // Action: List all projects for Gallery
+        if (listAll) {
+            const allMetadata = await kv.hgetall('projects:metadata');
+            if (!allMetadata) return NextResponse.json([]);
+
+            // Convert hash map to sorted array (newest first)
+            const list = Object.values(allMetadata)
+                .map(v => typeof v === 'string' ? JSON.parse(v) : v)
+                .sort((a, b) => b.lastModified - a.lastModified);
+
+            return NextResponse.json(list);
+        }
+
+        if (!id) {
+            return NextResponse.json({ error: 'Missing project ID' }, { status: 400 });
+        }
+
+        // Action: List history versions (just metadata)
+        if (listHistory) {
+            const history = await kv.lrange(`history:${id}`, 0, 2);
+            const simplifiedHistory = history.map((item, idx) => {
+                const p = typeof item === 'string' ? JSON.parse(item) : item;
+                return {
+                    version: idx,
+                    lastModified: p.lastModified,
+                    sceneCount: p.scenes?.length || 0
+                };
+            });
+            return NextResponse.json(simplifiedHistory);
+        }
+
+        // Action: Load specific project (or version)
         let project;
-        if (version !== null) {
-            // Load a specific version from history (0 is latest, 2 is oldest)
+        if (version !== null && version !== undefined && version !== '') {
             const index = parseInt(version);
-            project = await kv.lindex(`history:${id}`, index);
+            const item = await kv.lindex(`history:${id}`, index);
+            project = typeof item === 'string' ? JSON.parse(item) : item;
         } else {
-            // Load the main "live" version
             project = await kv.get(`project:${id}`);
         }
 
@@ -77,7 +115,27 @@ export async function GET(req: Request) {
         return NextResponse.json(project);
 
     } catch (error: any) {
-        console.error('Load Error:', error);
+        console.error('API Error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+/**
+ * API to Delete Project
+ */
+export async function DELETE(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+
+        if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+        await kv.del(`project:${id}`);
+        await kv.del(`history:${id}`);
+        await kv.hdel('projects:metadata', id);
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
