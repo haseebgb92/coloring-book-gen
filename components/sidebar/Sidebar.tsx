@@ -6,8 +6,9 @@ import { cn } from '@/lib/utils';
 import {
     Folder, FileText, Layers, Settings, Palette, Type,
     BookOpen, FileOutput, CheckCircle, AlertTriangle, Layout, Hash,
-    Save, Upload
+    Save, Upload, Loader2, Cloud, CheckCircle2
 } from 'lucide-react';
+import { useState } from 'react';
 import { ProjectSection } from './ProjectSection';
 import { PasteScenesSection } from './PasteScenesSection';
 import { ScenesSection } from './ScenesSection';
@@ -24,15 +25,31 @@ export function Sidebar({ className }: { className?: string }) {
     const validationErrors = useProjectStore((state) => state.validationErrors);
     const resetProject = useProjectStore(s => s.resetProject);
     const state = useProjectStore(s => s);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showSavedMsg, setShowSavedMsg] = useState(false);
 
-    const handleExportJSON = () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `${state.name.replace(/\s+/g, '-').toLowerCase()}.json`);
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+    const handleCloudSave = async () => {
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            const response = await fetch('/api/project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(state),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setShowSavedMsg(true);
+                setTimeout(() => setShowSavedMsg(false), 3000);
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (err: any) {
+            console.error('Cloud save failed:', err);
+            alert('Failed to save to cloud: ' + err.message);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,8 +96,11 @@ export function Sidebar({ className }: { className?: string }) {
                 <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quick Actions</span>
                     <span className="text-[10px] text-green-600 flex items-center gap-1 font-medium italic">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                        Autosaved
+                        {showSavedMsg ? (
+                            <><CheckCircle2 className="w-3 h-3" /> Saved to Cloud</>
+                        ) : (
+                            <><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Autosaved</>
+                        )}
                     </span>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
@@ -93,12 +113,17 @@ export function Sidebar({ className }: { className?: string }) {
                         <span className="text-[10px] text-gray-600 group-hover:text-red-700">New</span>
                     </button>
                     <button
-                        onClick={handleExportJSON}
-                        className="flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-all group"
-                        title="Save Project"
+                        onClick={handleCloudSave}
+                        disabled={isSaving}
+                        className="flex flex-col items-center justify-center p-2 bg-white border border-gray-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-200 transition-all group"
+                        title="Sync to Cloud (Keeps last 3 versions)"
                     >
-                        <Save className="w-4 h-4 text-gray-400 group-hover:text-blue-500 mb-1" />
-                        <span className="text-[10px] text-gray-600 group-hover:text-blue-700">Save</span>
+                        {isSaving ? (
+                            <Loader2 className="w-4 h-4 text-emerald-500 animate-spin mb-1" />
+                        ) : (
+                            <Cloud className="w-4 h-4 text-gray-400 group-hover:text-emerald-500 mb-1" />
+                        )}
+                        <span className="text-[10px] text-gray-600 group-hover:text-emerald-700">Save</span>
                     </button>
                     <div className="relative">
                         <input
