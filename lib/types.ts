@@ -54,8 +54,11 @@ export type TemplateConfig = {
     colors: TemplateColors;
     layout: {
         borderStyle: 'none' | 'solid' | 'dashed' | 'double' | 'fancy';
-        cornerRadius: number; // rounded-2xl look
+        cornerRadius: number;
         showIcon: boolean;
+        iconSet?: 'stars' | 'leaves' | 'hearts' | 'geometric';
+        headingSize: number;
+        bodySize: number;
     };
 };
 

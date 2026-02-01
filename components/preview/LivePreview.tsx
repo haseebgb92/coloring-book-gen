@@ -3,11 +3,22 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ProjectState, Scene } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight, Star, Heart, Leaf, Box } from 'lucide-react';
+
+const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
+    switch (type) {
+        case 'stars': return <Star fill={color} stroke="none" size={size} />;
+        case 'hearts': return <Heart fill={color} stroke="none" size={size} />;
+        case 'leaves': return <Leaf fill={color} stroke="none" size={size} />;
+        case 'geometric': return <Box fill={color} stroke="none" size={size} />;
+        default: return null;
+    }
+};
 
 export function LivePreview({ state }: { state: ProjectState }) {
     const { scenes, template, printSettings, writingSettings } = state;
     const { trimSize } = printSettings;
+    const layout = template.layout;
 
     const [currentSpread, setCurrentSpread] = useState(0);
     const [scale, setScale] = useState(0.8);
@@ -17,7 +28,7 @@ export function LivePreview({ state }: { state: ProjectState }) {
         trimSize === '8x10' ? [8, 10] : [8.5, 11];
     const aspectRatio = width / height;
 
-    const totalSpreads = scenes.length; // + Front matter logic later
+    const totalSpreads = scenes.length;
 
     const currentScene = scenes[currentSpread];
 
@@ -35,7 +46,7 @@ export function LivePreview({ state }: { state: ProjectState }) {
 
     // Page Style
     const pageStyle = {
-        width: `${width * 96 * scale}px`, // 96 DPI approx for screen
+        width: `${width * 96 * scale}px`,
         height: `${height * 96 * scale}px`,
         backgroundColor: template.colors.background,
     };
@@ -43,14 +54,14 @@ export function LivePreview({ state }: { state: ProjectState }) {
     const contentStyle = {
         paddingTop: `${printSettings.margins.top}in`,
         paddingBottom: `${printSettings.margins.bottom}in`,
-        paddingLeft: `${printSettings.margins.outer}in`, // Left page outer is left
+        paddingLeft: `${printSettings.margins.outer}in`,
         paddingRight: `${printSettings.margins.inner}in`,
     };
 
     const rightContentStyle = {
         paddingTop: `${printSettings.margins.top}in`,
         paddingBottom: `${printSettings.margins.bottom}in`,
-        paddingLeft: `${printSettings.margins.inner}in`, // Right page inner is left
+        paddingLeft: `${printSettings.margins.inner}in`,
         paddingRight: `${printSettings.margins.outer}in`,
     };
 
@@ -78,34 +89,50 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
                     style={pageStyle}
                 >
-                    {/* Visual Bleed Guide (Overlay) */}
-                    {printSettings.bleed && (
-                        <div className="absolute inset-0 pointer-events-none z-50 border border-red-400 border-dashed"
-                            style={{
-                                left: `${0.125 * 96 * scale}px`,
-                                top: `${0.125 * 96 * scale}px`,
-                                right: `${0.125 * 96 * scale}px`,
-                                bottom: `${0.125 * 96 * scale}px`,
-                            }}
-                        >
-                            <div className="absolute top-0 right-0 bg-red-500 text-white text-[8px] px-1">Safe Area Boundary</div>
-                        </div>
+                    {/* Decorative Elements */}
+                    {layout.showIcon && layout.iconSet && (
+                        <>
+                            <div className="absolute top-4 left-4 opacity-20">
+                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={48 * scale} />
+                            </div>
+                            <div className="absolute bottom-12 right-4 opacity-20 transform rotate-12">
+                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={32 * scale} />
+                            </div>
+                        </>
                     )}
 
-                    <div className="w-full h-full flex flex-col" style={contentStyle}>
-                        <h1 className="text-2xl font-bold mb-4" style={{ fontFamily: template.fonts.heading, color: template.colors.heading }}>
+                    <div className="w-full h-full flex flex-col items-center text-center" style={contentStyle}>
+                        <h1
+                            className="font-bold mb-4"
+                            style={{
+                                fontFamily: template.fonts.heading,
+                                color: template.colors.heading,
+                                fontSize: `${(layout.headingSize || 28) * scale}px`
+                            }}
+                        >
                             {currentScene.title}
                         </h1>
-                        <p className="text-base whitespace-pre-wrap mb-8" style={{ fontFamily: template.fonts.body, color: template.colors.storyText }}>
+
+                        {layout.showIcon && <div className="h-px w-24 mb-6 opacity-30" style={{ backgroundColor: template.colors.accent }} />}
+
+                        <p
+                            className="whitespace-pre-wrap mb-10"
+                            style={{
+                                fontFamily: template.fonts.body,
+                                color: template.colors.storyText,
+                                fontSize: `${(layout.bodySize || 14) * scale}px`,
+                                lineHeight: 1.6
+                            }}
+                        >
                             {currentScene.story}
                         </p>
 
                         {/* Attributes/Words */}
-                        <div className="mt-4 space-y-4">
+                        <div className="w-full space-y-4">
                             {currentScene.words.map((word, idx) => (
-                                <div key={idx} className="relative h-12 w-full">
+                                <div key={idx} className="relative h-14 w-full group">
                                     {/* Guidelines */}
-                                    <div className="absolute inset-0 w-full h-full pointer-events-none">
+                                    <div className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
                                         {writingSettings.guidelines.showTop && (
                                             <div className="absolute top-0 w-full border-t" style={{ borderColor: template.colors.writingLine }}></div>
                                         )}
@@ -118,15 +145,18 @@ export function LivePreview({ state }: { state: ProjectState }) {
                                     </div>
 
                                     {/* Words */}
-                                    <div className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap px-1">
-                                        {Array.from({ length: writingSettings.minRepetitions }).map((_, rIdx) => (
+                                    <div className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap px-4 bg-white/50 rounded pointer-events-none">
+                                        {Array.from({ length: Math.max(1, writingSettings.minRepetitions) }).map((_, rIdx) => (
                                             <span
                                                 key={rIdx}
-                                                className="mr-8 text-3xl select-none"
+                                                className="mr-12 select-none tracking-widest"
                                                 style={{
-                                                    fontFamily: '"Codystar", monospace',
+                                                    fontFamily: '"Schoolbell", cursive',
+                                                    fontSize: `${28 * scale}px`,
                                                     color: template.colors.tracing,
-                                                    opacity: 0.7
+                                                    textDecoration: 'underline dotted',
+                                                    textUnderlineOffset: '4px',
+                                                    opacity: 0.9
                                                 }}
                                             >
                                                 {word}
@@ -142,7 +172,11 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     {printSettings.pageNumbers.enabled && (
                         <div
                             className="absolute w-full text-center text-xs"
-                            style={{ bottom: '0.25in', color: template.colors.pageNumber }}
+                            style={{
+                                bottom: '0.25in',
+                                color: template.colors.pageNumber,
+                                fontSize: `${10 * scale}px`
+                            }}
                         >
                             {2 + (currentSpread * 2)}
                         </div>

@@ -1,25 +1,41 @@
 import React from 'react';
-import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet, Font, Svg, Path, Circle, Rect } from '@react-pdf/renderer';
 import { ProjectState, Scene } from '@/lib/types';
 import { TEMPLATES, INITIAL_PROJECT_STATE } from '@/lib/templates';
 
-// Register Fonts
-// Using Google Fonts URLs. In production these should be downloaded or robustly handled.
-// Font.register({
-//     family: 'Inter',
-//     src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff'
-// });
-// Font.register({
-//     family: 'Schoolbell', // Handwriting style for tracing? Or just dotted.
-//     src: 'https://fonts.gstatic.com/s/schoolbell/v22/P_V12m4o84jO4eAs9zVl8w.woff2'
-// });
-// // Using a dotted font for tracing if possible, or just light color
-// Font.register({
-//     family: 'Codystar',
-//     src: 'https://fonts.gstatic.com/s/codystar/v18/FwZf7-Q1xW8sOse7bkF-4E_y.woff2'
-// });
-
 const PT_PER_INCH = 72;
+
+// Decorative Components for PDF
+const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
+    switch (type) {
+        case 'stars':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill={color} />
+                </Svg>
+            );
+        case 'hearts':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill={color} />
+                </Svg>
+            );
+        case 'leaves':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Path d="M11 20A7 7 0 0 1 11 6a7 7 0 0 1 7 7c0 3.87-3.13 7-7 7z" fill={color} />
+                    <Path d="M13 2.05A10.57 10.57 0 0 1 15.36 3" fill={color} opacity={0.5} />
+                </Svg>
+            );
+        case 'geometric':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24">
+                    <Rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill={color} />
+                </Svg>
+            );
+        default: return null;
+    }
+};
 
 export function BookDocument({ state }: { state: ProjectState }) {
     // Sanitization and Defaults
@@ -65,7 +81,6 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const marginLeft = (safeMargins.outer * PT_PER_INCH) + bleedPt;
     const marginRight = (safeMargins.inner * PT_PER_INCH) + bleedPt;
 
-    // Helper for margins based on page side
     const getMargins = (side: 'left' | 'right') => {
         const t = (safeMargins.top * PT_PER_INCH) + bleedPt;
         const b = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
@@ -92,15 +107,15 @@ export function BookDocument({ state }: { state: ProjectState }) {
         },
         text: {
             color: colors.storyText || '#000000',
-            fontSize: 12,
-            lineHeight: 1.5,
+            fontSize: layout.bodySize || 14,
+            lineHeight: 1.6,
         },
         heading: {
             color: colors.heading || '#000000',
-            fontSize: 24,
+            fontSize: layout.headingSize || 30,
             marginBottom: 20,
-            fontFamily: 'Helvetica',
-            fontWeight: 'bold',
+            fontFamily: 'Helvetica-Bold',
+            textAlign: 'center'
         },
         practiceRow: {
             marginTop: 20,
@@ -110,7 +125,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
             fontSize: 28,
             color: colors.tracing || '#9ca3af',
             fontFamily: 'Courier',
-            marginRight: 15,
+            marginRight: 20,
         },
         writingLine: {
             borderBottomWidth: 1,
@@ -136,7 +151,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                         justifyContent: 'center',
                         alignItems: 'center'
                     }}>
-                        {page.title && <Text style={[styles.heading, { textAlign: 'center' }]}>{page.title}</Text>}
+                        {page.title && <Text style={styles.heading}>{page.title}</Text>}
                         {page.image && (page.image.startsWith('data:') || page.image.startsWith('http') || page.image.startsWith('blob:')) ? (
                             <View style={{ width: '80%', height: '50%', marginBottom: 20 }}>
                                 <Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -160,35 +175,64 @@ export function BookDocument({ state }: { state: ProjectState }) {
                     <React.Fragment key={scene.id || idx}>
                         {/* Left Page: Story + Words */}
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
+                            {/* Decorative Background Icons */}
+                            {layout.showIcon && layout.iconSet && (
+                                <>
+                                    <View style={{ position: 'absolute', top: 30, left: 30, opacity: 0.15 }}>
+                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={60} />
+                                    </View>
+                                    <View style={{ position: 'absolute', bottom: 80, right: 30, opacity: 0.15 }}>
+                                        <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={40} />
+                                    </View>
+                                </>
+                            )}
+
                             <View style={{
                                 marginTop: leftMargins.top,
                                 marginBottom: leftMargins.bottom,
                                 marginLeft: leftMargins.left,
                                 marginRight: leftMargins.right,
-                                flex: 1
+                                flex: 1,
+                                alignItems: 'center'
                             }}>
                                 {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
-                                {scene.story && <Text style={styles.text}>{scene.story}</Text>}
 
-                                <View style={{ marginTop: 30 }}>
+                                {layout.showIcon && <View style={{ height: 1, width: 80, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 20 }} />}
+
+                                {scene.story && <Text style={[styles.text, { textAlign: 'center' }]}>{scene.story}</Text>}
+
+                                <View style={{ marginTop: 40, width: '100%' }}>
                                     {(scene.words || []).map((word, wIdx) => (
                                         <View key={wIdx} style={styles.practiceRow}>
-                                            <View style={{ position: 'relative', height: 40, width: '100%', marginBottom: 5 }}>
+                                            <View style={{ position: 'relative', height: 45, width: '100%', marginBottom: 8 }}>
                                                 {writingSettings.guidelines.showTop && (
                                                     <View style={[styles.writingLine, { top: 0, borderBottomColor: colors.writingLine }]} />
                                                 )}
                                                 {writingSettings.guidelines.showMid && (
-                                                    <View style={[styles.writingLine, { top: 15, borderBottomStyle: 'dashed', borderBottomColor: colors.writingLine }]} />
+                                                    <View style={[styles.writingLine, { top: 22.5, borderBottomStyle: 'dashed', borderBottomColor: colors.writingLine }]} />
                                                 )}
                                                 {writingSettings.guidelines.showBase && (
-                                                    <View style={[styles.writingLine, { top: 30, borderBottomColor: colors.writingLine }]} />
+                                                    <View style={[styles.writingLine, { top: 45, borderBottomColor: colors.writingLine }]} />
                                                 )}
 
-                                                <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 0 }}>
+                                                <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 10 }}>
                                                     {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
-                                                        <Text key={rIdx} style={styles.practiceWord}>
-                                                            {word || ''}
-                                                        </Text>
+                                                        <View key={rIdx} style={{ marginRight: 30 }}>
+                                                            <Text style={[styles.practiceWord, { color: colors.tracing }]}>
+                                                                {word || ''}
+                                                            </Text>
+                                                            {/* Dotted underline hack if no font */}
+                                                            <View style={{
+                                                                position: 'absolute',
+                                                                bottom: -2,
+                                                                left: 0,
+                                                                right: 0,
+                                                                borderBottomWidth: 1,
+                                                                borderBottomColor: colors.tracing,
+                                                                borderBottomStyle: 'dashed',
+                                                                opacity: 0.5
+                                                            }} />
+                                                        </View>
                                                     ))}
                                                 </View>
                                             </View>
@@ -228,7 +272,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     height: pageHeight - (rightMargins.top + rightMargins.bottom),
                                     backgroundColor: '#ffffff',
                                     position: 'relative',
-                                    overflow: 'hidden', // Clipping container
+                                    overflow: 'hidden',
                                 }}>
                                     {/* Image Layer */}
                                     {scene.illustration && (scene.illustration.startsWith('data:') || scene.illustration.startsWith('http') || scene.illustration.startsWith('blob:')) ? (
@@ -293,7 +337,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                         justifyContent: 'center',
                         alignItems: 'center'
                     }}>
-                        {page.title && <Text style={[styles.heading, { textAlign: 'center' }]}>{page.title}</Text>}
+                        {page.title && <Text style={styles.heading}>{page.title}</Text>}
                         {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
                     </View>
                 </Page>
