@@ -25,6 +25,7 @@ interface ProjectStore extends ProjectState {
     setActiveSection: (section: string) => void;
     setName: (name: string) => void;
     resetProject: () => void;
+    loadProject: (state: ProjectState) => void;
 }
 
 export const useProjectStore = create<ProjectStore>()(
@@ -115,6 +116,11 @@ export const useProjectStore = create<ProjectStore>()(
                 template: TEMPLATES[0],
                 activeSection: 'project',
                 validationErrors: []
+            }),
+
+            loadProject: (state) => set({
+                ...state,
+                lastModified: Date.now()
             }),
         }),
         {

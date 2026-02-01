@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useProjectStore } from '@/lib/store';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Cloud, Share, Copy, CheckCircle2 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { BookDocument } from '../pdf/BookDocument';
 
@@ -11,6 +11,9 @@ export function ExportSection() {
     const validationErrors = useProjectStore(s => s.validationErrors);
     const hardErrors = validationErrors.filter(e => e.severity === 'error');
     const [isExporting, setIsExporting] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [shareUrl, setShareUrl] = useState<string | null>(null);
+    const [lastSynced, setLastSynced] = useState<number | null>(null);
 
     const handleExport = async () => {
         if (isExporting) return;
@@ -46,6 +49,30 @@ export function ExportSection() {
         }
     };
 
+    const handleCloudSave = async () => {
+        if (isSyncing) return;
+        setIsSyncing(true);
+        try {
+            const response = await fetch('/api/project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(state),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setShareUrl(data.url);
+                setLastSynced(Date.now());
+            } else {
+                throw new Error(data.error || 'Failed to sync');
+            }
+        } catch (error: any) {
+            console.error('Sync failed:', error);
+            alert(error.message || 'Failed to sync with cloud. Please ensure KV is configured on Vercel.');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     return (
         <div className="space-y-4">
             <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800 border border-blue-100 flex gap-3">
@@ -54,6 +81,46 @@ export function ExportSection() {
                     <p className="font-bold">Finalize Your Book</p>
                     <p className="text-xs opacity-80 mt-1">This will generate a high-quality PDF ready for Amazon KDP.</p>
                 </div>
+            </div>
+
+            <div className="bg-emerald-50 p-4 rounded-lg text-sm text-emerald-800 border border-emerald-100 space-y-3">
+                <div className="flex gap-3">
+                    <div className="shrink-0 mt-0.5"><Cloud className="w-5 h-5 opacity-50" /></div>
+                    <div>
+                        <p className="font-bold text-emerald-900">Cloud Sync & Backup</p>
+                        <p className="text-[11px] opacity-80 mt-0.5">Save your project to the server to access it from anywhere.</p>
+                    </div>
+                </div>
+
+                {shareUrl ? (
+                    <div className="space-y-2">
+                        <div className="bg-white/80 p-2 rounded border border-emerald-200 flex items-center justify-between gap-2 overflow-hidden">
+                            <span className="text-[10px] font-mono truncate text-emerald-700">{shareUrl}</span>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(shareUrl);
+                                    alert('Link copied to clipboard!');
+                                }}
+                                className="p-1 hover:bg-emerald-100 rounded"
+                            >
+                                <Copy className="w-3 h-3" />
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-medium">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Last synced: {new Date(lastSynced!).toLocaleTimeString()}</span>
+                        </div>
+                    </div>
+                ) : null}
+
+                <button
+                    onClick={handleCloudSave}
+                    disabled={isSyncing}
+                    className="w-full py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 active:scale-[0.98] transition-all disabled:bg-emerald-300 flex items-center justify-center gap-2"
+                >
+                    {isSyncing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Cloud className="w-3 h-3" />}
+                    {isSyncing ? 'Syncing...' : 'Sync to Cloud'}
+                </button>
             </div>
 
             <div className="space-y-2">
