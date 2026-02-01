@@ -15,7 +15,7 @@ export async function generateColoringBookPDF(
         format: [width, height],
     });
 
-    // 1. Load Dotted Font (Essential)
+    // 1. Load Dotted Font (Essential - usually works)
     try {
         const fontData = await loadFontAsBase64(RALEWAY_DOTS_URL);
         const base64 = fontData.split(',')[1];
@@ -25,30 +25,37 @@ export async function generateColoringBookPDF(
         console.warn('Failed to load dotted font', e);
     }
 
-    // 2. Load Template Font
-    const templateFontName = project.template.fontFamily;
-    let activeFont = 'helvetica'; // Fallback Default
+    // 2. Load Template Font logic
+    // EMERGENCY FIX: Force Helvetica to ensure text renders.
+    // Custom Google Fonts are causing blank pages due to encoding/compatibility issues in jsPDF.
+    let activeFont = 'helvetica';
 
+    /* 
+    // Custom font loading disabled temporarily to fix "Blank Pages" issue.
+    const templateFontName = project.template.fontFamily;
     if (templateFontName && GOOGLE_FONTS[templateFontName as keyof typeof GOOGLE_FONTS]) {
         try {
-            const fontUrl = GOOGLE_FONTS[templateFontName as keyof typeof GOOGLE_FONTS];
-            const fontData = await loadFontAsBase64(fontUrl);
-            const base64 = fontData.split(',')[1];
-            const filename = `${templateFontName.replace(/\s+/g, '')}.ttf`;
-
-            pdf.addFileToVFS(filename, base64);
-            // Try standard addFont first. identity-H can cause issues with some ttf files.
-            // If this fails, the PDF generation generally throws later.
-            // We will register it without specific encoding first which usually works for standard TTFs.
-            pdf.addFont(filename, templateFontName, 'normal');
-            activeFont = templateFontName;
-            console.log(`Loaded custom font: ${templateFontName}`);
+             // ... (Previous logic)
         } catch (e) {
-            console.warn(`Failed to load template font ${templateFontName}, falling back to Helvetica`, e);
             activeFont = 'helvetica';
         }
     } else if (['Times', 'Courier'].includes(templateFontName)) {
         activeFont = templateFontName;
+    }
+    */
+
+    // Map "Playful" fonts to standard fonts roughly
+    const fontMap: Record<string, string> = {
+        'Comic Neue': 'Courier',
+        'Patrick Hand': 'Courier',
+        'Fredoka': 'Helvetica',
+        'Sniglet': 'Helvetica',
+        'Indie Flower': 'Courier'
+    };
+
+    if (project.template.fontFamily && fontMap[project.template.fontFamily]) {
+        // Start with mapped standard font
+        activeFont = fontMap[project.template.fontFamily];
     }
 
     let currentPage = 0;
@@ -106,17 +113,14 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
     const w = width * INCHES_TO_POINTS;
     const h = height * INCHES_TO_POINTS;
 
-    // Custom Text Override
     const customContent = project.customText?.[type];
 
-    // Set default font
-    try { pdf.setFont(fontName, 'normal'); } catch { pdf.setFont('helvetica', 'normal'); }
+    pdf.setFont(fontName, 'normal');
     pdf.setTextColor(0);
 
     if (type === 'title-page') {
         let currentY = h / 2;
 
-        // Logo Logic
         if (project.logo) {
             try {
                 const imgProps = pdf.getImageProperties(project.logo);
@@ -186,10 +190,6 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
             pdf.text(label, x + boxSize / 2, startY + boxSize + 20, { align: 'center' });
         });
 
-        // Show tip only if NO custom content, or always?
-        // If user provided custom content, maybe they replaced the tip?
-        // Let's assume custom content REPLACES the "Pick your favorite..." text, but we keep the tip unless explicitly customized (hard to separate).
-        // We will just put the tip at bottom.
         if (!customContent) {
             pdf.setFontSize(11);
             pdf.setTextColor(100);
@@ -206,7 +206,6 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
         pdf.rect(margin, margin, w - margin * 2, h - margin * 2);
 
         if (customContent) {
-            // Render Custom Certificate Content centered
             pdf.setFontSize(16);
             const lines = pdf.splitTextToSize(customContent, w - margin * 4);
             pdf.text(lines, w / 2, h / 2, { align: 'center' });
@@ -223,38 +222,31 @@ async function addFrontMatterPage(pdf: jsPDF, type: string, project: ProjectStat
         }
     } else {
         pdf.setFontSize(18);
-        // Allow custom text for generic pages too
         const text = customContent || type.replace(/-/g, ' ').toUpperCase();
         pdf.text(text, w / 2, h / 2, { align: 'center' });
     }
 }
 
-// ... (Rest of file: addIllustrationPage, addStoryTextPage unchanged)
 async function addIllustrationPage(pdf: jsPDF, story: Story, project: ProjectState) {
     const { width, height } = getPageDimensions(project.config);
     const w = width * INCHES_TO_POINTS;
     const h = height * INCHES_TO_POINTS;
     const margin = project.config.margins;
 
-    // Frame size: 85% of safe area
+    // Frame size: 85%
     const safeAvailableW = w - (margin.inner + margin.outer) * INCHES_TO_POINTS;
     const safeAvailableH = h - (margin.top + margin.bottom) * INCHES_TO_POINTS;
-
     const frameW = safeAvailableW * 0.85;
     const frameH = safeAvailableH * 0.85;
-
     const centerX = w / 2;
     const centerY = h / 2;
-
     const frameX = centerX - (frameW / 2);
     const frameY = centerY - (frameH / 2);
 
-    // Draw Outline Frame
     pdf.setDrawColor(0);
     pdf.setLineWidth(3);
     pdf.rect(frameX, frameY, frameW, frameH);
 
-    // Add Image
     if (story.illustration) {
         try {
             const padding = 10;
@@ -289,9 +281,7 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     const w = width * INCHES_TO_POINTS;
     const h = height * INCHES_TO_POINTS;
     const margin = project.config.margins;
-
     const fontSize = project.template.fontSize || 12;
-
     const isEven = pdf.getNumberOfPages() % 2 === 0;
 
     const marginLeft = (isEven ? margin.outer : margin.inner) * INCHES_TO_POINTS;
@@ -301,11 +291,7 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
     let currentY = margin.top * INCHES_TO_POINTS + 40;
 
     // Title
-    try {
-        pdf.setFont(fontName, 'normal');
-    } catch (e) {
-        pdf.setFont('helvetica', 'normal');
-    }
+    pdf.setFont(fontName, 'normal');
     pdf.setFontSize(24);
     pdf.setTextColor(0);
     pdf.text(story.title, w / 2, currentY, { align: 'center' });
@@ -321,18 +307,9 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
             currentY += fontSize;
             return;
         }
-        try {
-            const lines = pdf.splitTextToSize(para, contentWidth);
-            pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
-            currentY += lines.length * fontSize * 1.5 + fontSize;
-        } catch (e) {
-            console.warn("Text split failed, falling back to Helvetica", e);
-            pdf.setFont('helvetica', 'normal');
-            const lines = pdf.splitTextToSize(para, contentWidth);
-            pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
-            currentY += lines.length * fontSize * 1.5 + fontSize;
-            try { pdf.setFont(fontName, 'normal'); } catch { }
-        }
+        const lines = pdf.splitTextToSize(para, contentWidth);
+        pdf.text(lines, marginLeft, currentY, { align: 'left', lineHeightFactor: 1.5 });
+        currentY += lines.length * fontSize * 1.5 + fontSize;
     });
 
     currentY += 20;
@@ -351,14 +328,12 @@ function addStoryTextPage(pdf: jsPDF, story: Story, project: ProjectState, fontN
 
     const practiceWords = story.writing_words.slice(0, 5);
     practiceWords.forEach((word) => {
-        // Guide Line
         pdf.setDrawColor(180);
         pdf.setLineWidth(0.5);
         pdf.setLineDash([2, 2], 0);
         pdf.line(marginLeft, currentY + 6, w - marginRight, currentY + 6);
         pdf.setLineDash([], 0);
 
-        // 3x Repetition
         const sectionW = contentWidth / 3;
         pdf.text(word, marginLeft + sectionW * 0.5, currentY, { align: 'center' });
         pdf.text(word, marginLeft + sectionW * 1.5, currentY, { align: 'center' });
