@@ -224,23 +224,20 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 alignItems: 'center'
                             }}>
                                 <View style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    borderWidth: borderWeight,
-                                    borderColor: colors.border || '#000000',
-                                    borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
-                                    ...(safeCornerRadius > 0 ? { borderRadius: safeCornerRadius } : {}),
-                                    overflow: 'hidden',
+                                    width: pageWidth - (rightMargins.left + rightMargins.right),
+                                    height: pageHeight - (rightMargins.top + rightMargins.bottom),
                                     backgroundColor: '#ffffff',
-                                    position: 'relative'
+                                    position: 'relative',
+                                    overflow: 'hidden', // Clipping container
                                 }}>
+                                    {/* Image Layer */}
                                     {scene.illustration && (scene.illustration.startsWith('data:') || scene.illustration.startsWith('http') || scene.illustration.startsWith('blob:')) ? (
                                         <Image
                                             src={scene.illustration}
                                             style={{
                                                 position: 'absolute',
-                                                top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + getNum(scene.illustrationPositionY, 0)}%`,
-                                                left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + getNum(scene.illustrationPositionX, 0)}%`,
+                                                top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`,
+                                                left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`,
                                                 width: `${getNum(scene.illustrationScale, 1.05) * 100}%`,
                                                 height: `${getNum(scene.illustrationScale, 1.05) * 100}%`,
                                                 objectFit: 'cover'
@@ -253,6 +250,16 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                             </Text>
                                         </View>
                                     )}
+
+                                    {/* Frame/Border Layer (On Top) */}
+                                    <View style={{
+                                        position: 'absolute',
+                                        top: 0, left: 0, right: 0, bottom: 0,
+                                        borderWidth: borderWeight,
+                                        borderColor: colors.border || '#000000',
+                                        borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid',
+                                        ...(safeCornerRadius > 0 ? { borderRadius: safeCornerRadius } : {}),
+                                    }} />
                                 </View>
                             </View>
 
