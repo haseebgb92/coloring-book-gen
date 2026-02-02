@@ -21,7 +21,8 @@ const DecorativeLayer = ({ layout, colors, bleedPt }: {
 }) => {
     if (!layout.showIcon || !layout.iconSet) return null;
 
-    // Use a higher zIndex and absolute positioning to ensure icons are visible
+    const opacity = 0.12; // Lowered to be subtle exactly as in preview
+
     return (
         <View style={{
             position: 'absolute',
@@ -30,16 +31,16 @@ const DecorativeLayer = ({ layout, colors, bleedPt }: {
             right: 0,
             bottom: 0
         }}>
-            <View style={{ position: 'absolute', top: 15 + bleedPt, left: 15 + bleedPt, opacity: 0.15 }}>
+            <View style={{ position: 'absolute', top: 15 + bleedPt, left: 15 + bleedPt, transform: 'rotate(-15deg)', opacity }}>
                 <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={48} />
             </View>
-            <View style={{ position: 'absolute', top: 15 + bleedPt, right: 15 + bleedPt, opacity: 0.15 }}>
+            <View style={{ position: 'absolute', top: 15 + bleedPt, right: 15 + bleedPt, transform: 'rotate(15deg)', opacity }}>
                 <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={36} />
             </View>
-            <View style={{ position: 'absolute', bottom: 35 + bleedPt, left: 15 + bleedPt, opacity: 0.15 }}>
+            <View style={{ position: 'absolute', bottom: 40 + bleedPt, left: 20 + bleedPt, transform: 'rotate(10deg)', opacity }}>
                 <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={30} />
             </View>
-            <View style={{ position: 'absolute', bottom: 40 + bleedPt, right: 15 + bleedPt, opacity: 0.15 }}>
+            <View style={{ position: 'absolute', bottom: 45 + bleedPt, right: 20 + bleedPt, transform: 'rotate(-10deg)', opacity }}>
                 <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={42} />
             </View>
         </View>
@@ -269,16 +270,25 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                     )}
                                     <View style={{ marginTop: isSquare ? 20 : 40, width: '100%' }}>
                                         {scene.words?.map((word, wIdx) => (
-                                            <View key={wIdx} style={[styles.practiceRow, isSquare ? { marginTop: 10, marginBottom: 5 } : {}]}>
-                                                <View style={{ position: 'relative', height: isSquare ? 35 : 45, width: '100%', marginBottom: isSquare ? 4 : 8 }}>
+                                            <View key={wIdx} style={[styles.practiceRow, isSquare ? { marginTop: 12, marginBottom: 8 } : { marginTop: 24, marginBottom: 12 }]}>
+                                                <View style={{ position: 'relative', height: isSquare ? 45 : 60, width: '100%', marginBottom: isSquare ? 6 : 10 }}>
                                                     {writingSettings.guidelines.showTop && <View style={[styles.writingLine, { top: 0 }]} />}
-                                                    {writingSettings.guidelines.showMid && <View style={[styles.writingLine, { top: isSquare ? 17.5 : 22.5, borderBottomStyle: 'dashed' }]} />}
-                                                    {writingSettings.guidelines.showBase && <View style={[styles.writingLine, { top: isSquare ? 35 : 45 }]} />}
-                                                    <View style={{ flexDirection: 'row', position: 'absolute', top: isSquare ? 3 : 5, left: 10 }}>
+                                                    {writingSettings.guidelines.showMid && <View style={[styles.writingLine, { top: isSquare ? 22.5 : 30, borderBottomStyle: 'dashed' }]} />}
+                                                    {writingSettings.guidelines.showBase && <View style={[styles.writingLine, { top: isSquare ? 45 : 60 }]} />}
+                                                    <View style={{
+                                                        flexDirection: 'row',
+                                                        position: 'absolute',
+                                                        top: isSquare ? 4 : 8,
+                                                        left: 0,
+                                                        right: 0,
+                                                        justifyContent: 'space-around',
+                                                        alignItems: 'center'
+                                                    }}>
                                                         {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
                                                             <Text key={rIdx} style={[
                                                                 styles.practiceWord,
-                                                                isSquare ? { fontSize: (writingSettings.practiceFontSize || 28) * 0.8, marginRight: 20 } : {}
+                                                                { marginRight: 0 },
+                                                                isSquare ? { fontSize: (writingSettings.practiceFontSize || 28) * 0.85 } : {}
                                                             ]}>
                                                                 {word}
                                                             </Text>

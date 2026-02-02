@@ -160,9 +160,9 @@ export function LivePreview({ state }: { state: ProjectState }) {
                             </p>
 
                             {/* Attributes/Words */}
-                            <div className="w-full space-y-4" style={{ marginTop: isSquare ? 'auto' : undefined, gap: isSquare ? `${10 * scale}px` : `${16 * scale}px` }}>
+                            <div className="w-full space-y-4" style={{ marginTop: isSquare ? 'auto' : undefined, gap: isSquare ? `${12 * scale}px` : `${16 * scale}px` }}>
                                 {currentScene.words.map((word, idx) => (
-                                    <div key={idx} className="relative w-full group shrink-0" style={{ height: isSquare ? `${35 * scale}px` : `${56 * scale}px` }}>
+                                    <div key={idx} className="relative w-full group shrink-0" style={{ height: isSquare ? `${45 * scale}px` : `${60 * scale}px`, marginBottom: isSquare ? `${8 * scale}px` : `${12 * scale}px` }}>
                                         {/* Guidelines */}
                                         <div className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
                                             {writingSettings.guidelines.showTop && (
@@ -177,18 +177,17 @@ export function LivePreview({ state }: { state: ProjectState }) {
                                         </div>
 
                                         {/* Words */}
-                                        <div className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap px-4 bg-white/50 rounded pointer-events-none">
+                                        <div className="absolute inset-0 flex items-center justify-around overflow-hidden whitespace-nowrap px-4 bg-white/50 rounded pointer-events-none">
                                             {Array.from({ length: Math.max(1, writingSettings.minRepetitions) }).map((_, rIdx) => (
                                                 <span
                                                     key={rIdx}
                                                     className="select-none"
                                                     style={{
                                                         fontFamily: 'Codystar, cursive',
-                                                        fontSize: `${(writingSettings.practiceFontSize || 28) * (isSquare ? 0.8 : 1) * scale}px`,
+                                                        fontSize: `${(writingSettings.practiceFontSize || 28) * (isSquare ? 0.85 : 1) * scale}px`,
                                                         color: template.colors.tracing,
                                                         opacity: 0.9,
-                                                        fontWeight: 400,
-                                                        marginRight: isSquare ? `${20 * scale}px` : `${48 * scale}px`
+                                                        fontWeight: 400
                                                     }}
                                                 >
                                                     {word}
