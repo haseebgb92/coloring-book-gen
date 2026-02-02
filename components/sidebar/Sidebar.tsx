@@ -75,8 +75,8 @@ export function Sidebar({ className }: { className?: string }) {
             let wasOptimized = false;
 
             const optimizedScenes = await Promise.all(state.scenes.map(async (scene) => {
-                // If larger than ~300KB as base64, compress it
-                if (scene.illustration && scene.illustration.length > 400000) {
+                // If larger than ~1MB as base64 (approx 1.3M chars), compress it
+                if (scene.illustration && scene.illustration.length > 1300000) {
                     try {
                         const compressed = await compressImage(scene.illustration);
                         wasOptimized = true;
@@ -276,7 +276,9 @@ export function Sidebar({ className }: { className?: string }) {
                                 ))
                             )}
                         </div>
-                        <p className="text-[8px] text-gray-400 text-center mt-3 border-t pt-2 italic">Keeps up to 3 most recent saves</p>
+                        <p className="text-[8px] text-gray-400 text-center mt-3 border-t pt-2 italic">
+                            Cloud saves may be optimized for sync speed. For maximum 300 DPI quality, always use "Export {'>'} Download JSON Project".
+                        </p>
                     </div>
                 )}
             </div>

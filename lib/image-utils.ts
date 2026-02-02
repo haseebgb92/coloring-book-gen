@@ -1,7 +1,8 @@
 /**
  * Compresses an image data URL or File to a specific size/quality
+ * Default limits are set for 300 DPI at 8.5" x 11" (approx 2550 x 3300)
  */
-export async function compressImage(dataUrl: string, maxWidth = 1200, maxHeight = 1200, quality = 0.7): Promise<string> {
+export async function compressImage(dataUrl: string, maxWidth = 2550, maxHeight = 3300, quality = 0.8): Promise<string> {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
