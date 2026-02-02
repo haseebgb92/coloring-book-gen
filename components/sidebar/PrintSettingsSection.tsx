@@ -19,11 +19,13 @@ export function PrintSettingsSection() {
                 >
                     <option value="6x9">6 x 9 inches</option>
                     <option value="8x10">8 x 10 inches</option>
+                    <option value="8.5x8.5">8.5 x 8.5 inches (Square)</option>
                     <option value="8.5x11">8.5 x 11 inches</option>
                 </select>
                 <p className="text-xs text-gray-400 mt-1">
                     {settings.trimSize === '6x9' && 'After-Trim: 6.25 × 9.25 in'}
                     {settings.trimSize === '8x10' && 'After-Trim: 8.25 × 10.25 in'}
+                    {settings.trimSize === '8.5x8.5' && 'After-Trim: 8.75 × 8.75 in'}
                     {settings.trimSize === '8.5x11' && 'After-Trim: 8.75 × 11.25 in'}
                 </p>
             </div>

@@ -31,7 +31,8 @@ export function LivePreview({ state }: { state: ProjectState }) {
 
     // Aspect Ratio
     const [width, height] = trimSize === '6x9' ? [6, 9] :
-        trimSize === '8x10' ? [8, 10] : [8.5, 11];
+        trimSize === '8x10' ? [8, 10] :
+            trimSize === '8.5x8.5' ? [8.5, 8.5] : [8.5, 11];
     const aspectRatio = width / height;
 
     const totalSpreads = scenes.length;

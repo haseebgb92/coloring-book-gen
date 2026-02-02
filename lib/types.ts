@@ -1,5 +1,5 @@
 
-export type TrimSize = '6x9' | '8x10' | '8.5x11';
+export type TrimSize = '6x9' | '8x10' | '8.5x8.5' | '8.5x11';
 
 export type PrintSettings = {
     trimSize: TrimSize;
