@@ -133,16 +133,16 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     {/* Decorative Elements */}
                     {layout.showIcon && layout.iconSet && (
                         <div className="absolute inset-0 pointer-events-none">
-                            <div className="absolute top-4 left-4 rotate-[-15deg]" style={{ opacity: layout.iconOpacity ?? 0.25 }}>
+                            <div className="absolute rotate-[-15deg]" style={{ top: `${20 * scale}px`, left: `${20 * scale}px`, opacity: layout.iconOpacity ?? 0.2 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={64 * scale} />
                             </div>
-                            <div className="absolute top-4 right-4 rotate-[15deg]" style={{ opacity: layout.iconOpacity ?? 0.25 }}>
+                            <div className="absolute rotate-[15deg]" style={{ top: `${20 * scale}px`, right: `${20 * scale}px`, opacity: layout.iconOpacity ?? 0.2 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={48 * scale} />
                             </div>
-                            <div className="absolute bottom-10 left-6 rotate-[10deg]" style={{ opacity: layout.iconOpacity ?? 0.25 }}>
+                            <div className="absolute rotate-[10deg]" style={{ bottom: `${40 * scale}px`, left: `${25 * scale}px`, opacity: layout.iconOpacity ?? 0.2 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={40 * scale} />
                             </div>
-                            <div className="absolute bottom-12 right-6 rotate-[-10deg]" style={{ opacity: layout.iconOpacity ?? 0.25 }}>
+                            <div className="absolute rotate-[-10deg]" style={{ bottom: `${45 * scale}px`, right: `${25 * scale}px`, opacity: layout.iconOpacity ?? 0.2 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={56 * scale} />
                             </div>
                         </div>
