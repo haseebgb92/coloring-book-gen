@@ -247,18 +247,27 @@ export function BookDocument({ state }: { state: ProjectState }) {
     return (
         <Document title={state.name || 'Coloring Book'}>
             {/* Front Matter */}
-            {(state.frontMatter || []).map((page, idx) => (
-                <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
-                    <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
-                    <View style={{ marginTop: pageTop, marginBottom: pageBottom, marginLeft: pageLeft, marginRight: pageRight, flex: 1, zIndex: 10 }}>
-                        <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
-                            {page.title && <Text style={styles.heading}>{page.title}</Text>}
-                            {page.image && <View style={{ width: '80%', height: '50%', marginBottom: 20 }}><Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></View>}
-                            {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
-                        </ContentFrame>
-                    </View>
-                </Page>
-            ))}
+            {(state.frontMatter || []).map((page, idx) => {
+                const isOdd = idx % 2 !== 0; // Page 0 is Recto (Right), Page 1 is Verso (Left)
+                // Wait, Front Matter Page 0 is physical page 1 (Right-hand side)
+                const isRecto = (idx + 1) % 2 !== 0;
+
+                const curLeft = isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isRecto ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt;
+                const curRight = isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isRecto ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt;
+
+                return (
+                    <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
+                        <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
+                        <View style={{ marginTop: pageTop, marginBottom: pageBottom, marginLeft: curLeft, marginRight: curRight, flex: 1, zIndex: 10 }}>
+                            <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
+                                {page.title && <Text style={styles.heading}>{page.title}</Text>}
+                                {page.image && <View style={{ width: '80%', height: '50%', marginBottom: 20 }}><Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></View>}
+                                {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
+                            </ContentFrame>
+                        </View>
+                    </Page>
+                );
+            })}
 
             {/* Scenes */}
             {(scenes || []).map((scene, idx) => {
@@ -360,17 +369,25 @@ export function BookDocument({ state }: { state: ProjectState }) {
             })}
 
             {/* Ending Pages */}
-            {(state.endingPages || []).map((page, idx) => (
-                <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
-                    <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
-                    <View style={{ marginTop: pageTop, marginBottom: pageBottom, marginLeft: pageLeft, marginRight: pageRight, flex: 1, zIndex: 10 }}>
-                        <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
-                            {page.title && <Text style={styles.heading}>{page.title}</Text>}
-                            {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
-                        </ContentFrame>
-                    </View>
-                </Page>
-            ))}
+            {(state.endingPages || []).map((page, idx) => {
+                const totalPrevPages = (state.frontMatter?.length || 0) + (scenes.length * 2);
+                const isRecto = (totalPrevPages + idx + 1) % 2 !== 0;
+
+                const curLeft = isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isRecto ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt;
+                const curRight = isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isRecto ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt;
+
+                return (
+                    <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
+                        <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
+                        <View style={{ marginTop: pageTop, marginBottom: pageBottom, marginLeft: curLeft, marginRight: curRight, flex: 1, zIndex: 10 }}>
+                            <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
+                                {page.title && <Text style={styles.heading}>{page.title}</Text>}
+                                {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
+                            </ContentFrame>
+                        </View>
+                    </Page>
+                );
+            })}
         </Document>
     );
 }
