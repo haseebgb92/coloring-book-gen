@@ -157,11 +157,12 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const colors = template?.colors;
     const layout = template?.layout;
 
-    const normalizedTrimSize = (trimSize || '').toLowerCase().replace(/\s+/g, '');
-    const isSquare = normalizedTrimSize === '8.5x8.5';
+    // Use multiple checks to be absolutely sure about square format
+    const trimStr = (trimSize || '').toLowerCase();
+    const isSquare = trimStr.includes('8.5x8.5') || (trimStr.split('x').filter(v => v.includes('8.5')).length >= 2);
 
-    const [widthIn, heightIn] = normalizedTrimSize === '6x9' ? [6, 9] :
-        normalizedTrimSize === '8x10' ? [8, 10] :
+    const [widthIn, heightIn] = trimStr.includes('6x9') ? [6, 9] :
+        trimStr.includes('8x10') ? [8, 10] :
             isSquare ? [8.5, 8.5] : [8.5, 11];
 
     const width = widthIn * PT_PER_INCH;
@@ -185,10 +186,10 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const safeCornerRadius = Math.max(0, getNum(layout?.cornerRadius, 0));
     const borderWeight = (layout?.borderStyle && layout?.borderStyle !== 'none') ? 2 : 0;
 
-    const marginTop = (safeMargins.top * PT_PER_INCH) + bleedPt;
-    const marginBottom = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
-    const marginLeft = (isSquare ? safeMargins.outer : safeMargins.outer) * PT_PER_INCH + bleedPt;
-    const marginRight = (isSquare ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt;
+    const pageTop = (isSquare ? safeMargins.outer : safeMargins.top) * PT_PER_INCH + bleedPt;
+    const pageBottom = (isSquare ? safeMargins.outer : safeMargins.bottom) * PT_PER_INCH + bleedPt;
+    const pageLeft = (isSquare ? safeMargins.outer : safeMargins.outer) * PT_PER_INCH + bleedPt;
+    const pageRight = (isSquare ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt;
 
     const styles = StyleSheet.create({
         page: { backgroundColor: colors.background || '#ffffff', fontFamily: 'Helvetica' },
@@ -210,7 +211,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
             {/* Front Matter */}
             {(state.frontMatter || []).map((page, idx) => (
                 <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
-                    <View style={{ marginTop: marginTop, marginBottom: marginBottom, marginLeft: marginLeft, marginRight: marginRight, flex: 1 }}>
+                    <View style={{ marginTop: pageTop, marginBottom: pageBottom, marginLeft: pageLeft, marginRight: pageRight, flex: 1 }}>
                         <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                             {page.title && <Text style={styles.heading}>{page.title}</Text>}
                             {page.image && <View style={{ width: '80%', height: '50%', marginBottom: 20 }}><Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></View>}
@@ -225,26 +226,24 @@ export function BookDocument({ state }: { state: ProjectState }) {
             {(scenes || []).map((scene, idx) => {
                 const isOdd = (idx * 2 + (state.frontMatter?.length || 0)) % 2 !== 0;
                 // For square format, use uniform margins on all sides
-                const m = {
-                    top: (safeMargins.top * PT_PER_INCH) + bleedPt,
-                    bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
+                const page1Margins = {
+                    top: (isSquare ? safeMargins.outer : safeMargins.top) * PT_PER_INCH + bleedPt,
+                    bottom: (isSquare ? safeMargins.outer : safeMargins.bottom) * PT_PER_INCH + bleedPt,
                     left: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
                     right: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
-                const rm = {
-                    top: (safeMargins.top * PT_PER_INCH) + bleedPt,
-                    bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
+                const page2Margins = {
+                    top: (isSquare ? safeMargins.outer : safeMargins.top) * PT_PER_INCH + bleedPt,
+                    bottom: (isSquare ? safeMargins.outer : safeMargins.bottom) * PT_PER_INCH + bleedPt,
                     left: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
                     right: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
-
-                // isSquare already defined at top scope
 
                 // Return two-page spread layout for all formats
                 return (
                     <React.Fragment key={scene.id || idx}>
                         <Page size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
-                            <View style={{ marginTop: m.top, marginBottom: m.bottom, marginLeft: m.left, marginRight: m.right, flex: 1 }}>
+                            <View style={{ marginTop: page1Margins.top, marginBottom: page1Margins.bottom, marginLeft: page1Margins.left, marginRight: page1Margins.right, flex: 1 }}>
                                 <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                                     {scene.title && (
                                         <Text style={[
@@ -305,18 +304,18 @@ export function BookDocument({ state }: { state: ProjectState }) {
                                 </ContentFrame>
                             </View>
                             <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
-                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: m.bottom - 12, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{2 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
+                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: page1Margins.bottom - 12, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{2 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
                         </Page>
 
                         <Page size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
-                            <View style={{ marginTop: rm.top, marginBottom: rm.bottom, marginLeft: rm.left, marginRight: rm.right, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                <View style={{ width: pageWidth - (rm.left + rm.right), height: pageHeight - (rm.top + rm.bottom), backgroundColor: '#ffffff', position: 'relative', overflow: 'hidden', borderRadius: safeCornerRadius }}>
+                            <View style={{ marginTop: page2Margins.top, marginBottom: page2Margins.bottom, marginLeft: page2Margins.left, marginRight: page2Margins.right, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <View style={{ width: pageWidth - (page2Margins.left + page2Margins.right), height: pageHeight - (page2Margins.top + page2Margins.bottom), backgroundColor: '#ffffff', position: 'relative', overflow: 'hidden', borderRadius: safeCornerRadius }}>
                                     {scene.illustration && <Image src={scene.illustration!} style={{ position: 'absolute', top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`, left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`, width: `${getNum(scene.illustrationScale, 1.05) * 100}%`, height: `${getNum(scene.illustrationScale, 1.05) * 100}%`, objectFit: 'cover' }} />}
                                     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderWidth: borderWeight, borderColor: colors.border, borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid', borderRadius: safeCornerRadius }} />
                                 </View>
                             </View>
                             <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
-                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: rm.bottom - 12, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{3 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
+                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: page2Margins.bottom - 12, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{3 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
                         </Page>
                     </React.Fragment>
                 );
@@ -325,7 +324,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
             {/* Ending Pages */}
             {(state.endingPages || []).map((page, idx) => (
                 <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
-                    <View style={{ marginTop: marginTop, marginBottom: marginBottom, marginLeft: marginLeft, marginRight: marginRight, flex: 1 }}>
+                    <View style={{ marginTop: pageTop, marginBottom: pageBottom, marginLeft: pageLeft, marginRight: pageRight, flex: 1 }}>
                         <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                             {page.title && <Text style={styles.heading}>{page.title}</Text>}
                             {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
