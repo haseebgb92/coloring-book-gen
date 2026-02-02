@@ -20,7 +20,12 @@ const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: strin
         case 'puzzles': return <Puzzle fill={color} stroke="none" size={size} />;
         case 'clouds': return <Cloud fill={color} stroke="none" size={size} />;
         case 'music': return <Music fill={color} stroke="none" size={size} />;
-        case 'winter': return <Snowflake stroke={color} size={size} />;
+        case 'winter': return (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                <path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" stroke={color} strokeWidth="1.5" />
+                <path d="M12 4l2 2m-4 0l2-2M4 12l2 2m0-4l-2 2M12 20l-2-2m4 0l-2 2M20 12l-2-2m0 4l2-2" stroke={color} strokeWidth="1.5" />
+            </svg>
+        );
         case 'ocean': return <Waves stroke={color} size={size} />;
         case 'sun': return <Sun fill={color} stroke="none" size={size} />;
         case 'butterfly':
@@ -133,17 +138,17 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     {/* Decorative Elements */}
                     {layout.showIcon && layout.iconSet && (
                         <div className="absolute inset-0 pointer-events-none">
-                            <div className="absolute rotate-[-15deg]" style={{ top: `${20 * scale}px`, left: `${20 * scale}px`, opacity: layout.iconOpacity ?? 0.2 }}>
-                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={64 * scale} />
+                            <div className="absolute rotate-[-15deg]" style={{ top: `${5 * scale}px`, left: `${5 * scale}px`, opacity: layout.iconOpacity ?? 0.12 }}>
+                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={72 * scale} />
                             </div>
-                            <div className="absolute rotate-[15deg]" style={{ top: `${20 * scale}px`, right: `${20 * scale}px`, opacity: layout.iconOpacity ?? 0.2 }}>
-                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={48 * scale} />
+                            <div className="absolute rotate-[15deg]" style={{ top: `${5 * scale}px`, right: `${5 * scale}px`, opacity: layout.iconOpacity ?? 0.12 }}>
+                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={50 * scale} />
                             </div>
-                            <div className="absolute rotate-[10deg]" style={{ bottom: `${40 * scale}px`, left: `${25 * scale}px`, opacity: layout.iconOpacity ?? 0.2 }}>
+                            <div className="absolute rotate-[10deg]" style={{ bottom: `${30 * scale}px`, left: `${10 * scale}px`, opacity: layout.iconOpacity ?? 0.12 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={40 * scale} />
                             </div>
-                            <div className="absolute rotate-[-10deg]" style={{ bottom: `${45 * scale}px`, right: `${25 * scale}px`, opacity: layout.iconOpacity ?? 0.2 }}>
-                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={56 * scale} />
+                            <div className="absolute rotate-[-10deg]" style={{ bottom: `${35 * scale}px`, right: `${10 * scale}px`, opacity: layout.iconOpacity ?? 0.12 }}>
+                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={60 * scale} />
                             </div>
                         </div>
                     )}
