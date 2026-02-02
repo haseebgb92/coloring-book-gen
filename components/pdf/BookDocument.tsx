@@ -21,20 +21,26 @@ const DecorativeLayer = ({ layout, colors, bleedPt }: {
 }) => {
     if (!layout.showIcon || !layout.iconSet) return null;
 
-    // Sizes matched to preview (px * 0.75 for pt conversion approx)
+    // Use a higher zIndex and absolute positioning to ensure icons are visible
     return (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.25 }}>
-            <View style={{ position: 'absolute', top: 10 + bleedPt, left: 10 + bleedPt, transform: 'rotate(-15deg)' }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={48} />
+        <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+        }}>
+            <View style={{ position: 'absolute', top: 15 + bleedPt, left: 15 + bleedPt, opacity: 0.15 }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={48} />
             </View>
-            <View style={{ position: 'absolute', top: 10 + bleedPt, right: 10 + bleedPt, transform: 'rotate(15deg)' }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={36} />
+            <View style={{ position: 'absolute', top: 15 + bleedPt, right: 15 + bleedPt, opacity: 0.15 }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={36} />
             </View>
-            <View style={{ position: 'absolute', bottom: 30 + bleedPt, left: 15 + bleedPt, transform: 'rotate(10deg)' }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={30} />
+            <View style={{ position: 'absolute', bottom: 35 + bleedPt, left: 15 + bleedPt, opacity: 0.15 }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={30} />
             </View>
-            <View style={{ position: 'absolute', bottom: 35 + bleedPt, right: 15 + bleedPt, transform: 'rotate(-10deg)' }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent} size={42} />
+            <View style={{ position: 'absolute', bottom: 40 + bleedPt, right: 15 + bleedPt, opacity: 0.15 }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={42} />
             </View>
         </View>
     );
