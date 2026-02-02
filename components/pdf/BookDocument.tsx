@@ -224,8 +224,8 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const safeCornerRadius = Math.max(0, getNum(layout?.cornerRadius, 0));
     const borderWeight = (layout?.borderStyle && layout?.borderStyle !== 'none') ? 2 : 0;
 
-    const pageTop = (isSquare ? safeMargins.top : safeMargins.top) * PT_PER_INCH + bleedPt;
-    const pageBottom = (isSquare ? safeMargins.top : safeMargins.bottom) * PT_PER_INCH + bleedPt;
+    const pageTop = safeMargins.top * PT_PER_INCH + bleedPt;
+    const pageBottom = safeMargins.bottom * PT_PER_INCH + bleedPt;
     const pageLeft = (isSquare ? safeMargins.outer : safeMargins.outer) * PT_PER_INCH + bleedPt;
     const pageRight = (isSquare ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt;
 
@@ -265,14 +265,14 @@ export function BookDocument({ state }: { state: ProjectState }) {
                 const isOdd = (idx * 2 + (state.frontMatter?.length || 0)) % 2 !== 0;
                 // For square format, use uniform margins on all sides
                 const page1Margins = {
-                    top: (isSquare ? safeMargins.top : safeMargins.top) * PT_PER_INCH + bleedPt,
-                    bottom: (isSquare ? safeMargins.top : safeMargins.bottom) * PT_PER_INCH + bleedPt,
+                    top: safeMargins.top * PT_PER_INCH + bleedPt,
+                    bottom: safeMargins.bottom * PT_PER_INCH + bleedPt,
                     left: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
                     right: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
                 const page2Margins = {
-                    top: (isSquare ? safeMargins.top : safeMargins.top) * PT_PER_INCH + bleedPt,
-                    bottom: (isSquare ? safeMargins.top : safeMargins.bottom) * PT_PER_INCH + bleedPt,
+                    top: safeMargins.top * PT_PER_INCH + bleedPt,
+                    bottom: safeMargins.bottom * PT_PER_INCH + bleedPt,
                     left: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
                     right: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };

@@ -74,19 +74,22 @@ export function LivePreview({ state }: { state: ProjectState }) {
     const [currentSpread, setCurrentSpread] = useState(0);
     const [scale, setScale] = useState(0.8);
 
+    const normalizedTrim = (trimSize || '').toLowerCase().replace(/\s+/g, '');
+    const isSquare = normalizedTrim.includes('8.5x8.5') ||
+        (normalizedTrim.includes('8.5') && !normalizedTrim.includes('11') && !normalizedTrim.includes('9') && !normalizedTrim.includes('10'));
+
     // Aspect Ratio
-    const [width, height] = trimSize === '6x9' ? [6, 9] :
-        trimSize === '8x10' ? [8, 10] :
-            trimSize === '8.5x8.5' ? [8.5, 8.5] : [8.5, 11];
+    const [width, height] = normalizedTrim.includes('6x9') ? [6, 9] :
+        normalizedTrim.includes('8x10') ? [8, 10] :
+            isSquare ? [8.5, 8.5] : [8.5, 11];
     const aspectRatio = width / height;
 
     const totalSpreads = scenes.length;
-
     const currentScene = scenes[currentSpread];
 
     useEffect(() => {
         if (currentSpread >= totalSpreads && totalSpreads > 0) setCurrentSpread(totalSpreads - 1);
-    }, [totalSpreads]);
+    }, [totalSpreads, currentSpread]);
 
     if (!currentScene) {
         return (
@@ -95,8 +98,6 @@ export function LivePreview({ state }: { state: ProjectState }) {
             </div>
         );
     }
-
-    const isSquare = trimSize === '8.5x8.5';
 
     // Page Style
     const pageStyle = {
