@@ -101,7 +101,18 @@ export function FrontMatterSection() {
                                         const f = e.target.files?.[0];
                                         if (f) {
                                             const r = new FileReader();
-                                            r.onload = (ev) => ev.target?.result && updatePage(page.id, { image: ev.target.result as string });
+                                            r.onload = async (ev) => {
+                                                if (ev.target?.result) {
+                                                    try {
+                                                        const { compressImage } = await import('@/lib/image-utils');
+                                                        const compressed = await compressImage(ev.target.result as string);
+                                                        updatePage(page.id, { image: compressed });
+                                                    } catch (err) {
+                                                        console.error('Compression failed', err);
+                                                        updatePage(page.id, { image: ev.target.result as string });
+                                                    }
+                                                }
+                                            };
                                             r.readAsDataURL(f);
                                         }
                                     }}

@@ -154,8 +154,17 @@ export function ScenesSection() {
                                                     const file = e.target.files?.[0];
                                                     if (file) {
                                                         const reader = new FileReader();
-                                                        reader.onload = (ev) => {
-                                                            if (ev.target?.result) updateScene(scene.id, { illustration: ev.target.result as string });
+                                                        reader.onload = async (ev) => {
+                                                            if (ev.target?.result) {
+                                                                try {
+                                                                    const { compressImage } = await import('@/lib/image-utils');
+                                                                    const compressed = await compressImage(ev.target.result as string);
+                                                                    updateScene(scene.id, { illustration: compressed });
+                                                                } catch (err) {
+                                                                    console.error('Compression failed', err);
+                                                                    updateScene(scene.id, { illustration: ev.target.result as string });
+                                                                }
+                                                            }
                                                         };
                                                         reader.readAsDataURL(file);
                                                     }

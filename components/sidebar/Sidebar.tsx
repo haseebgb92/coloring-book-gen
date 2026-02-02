@@ -66,23 +66,46 @@ export function Sidebar({ className }: { className?: string }) {
 
     const handleCloudSave = async () => {
         if (isSaving) return;
+
+        const payload = JSON.stringify(state);
+        const sizeInMb = payload.length / (1024 * 1024);
+
+        if (sizeInMb > 4.5) {
+            alert(`Project is too large (${sizeInMb.toFixed(1)}MB). Vercel limits are 4.5MB. Please remove some large images or reduce their count before saving.`);
+            return;
+        }
+
         setIsSaving(true);
         try {
             const response = await fetch('/api/project', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(state),
+                body: payload,
             });
-            const data = await response.json();
+
+            // Check for non-JSON or error status before parsing
+            if (response.status === 413) {
+                throw new Error('Project is too large to save to the cloud. Try removing large images.');
+            }
+
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (pErr) {
+                console.error('Raw response:', text);
+                throw new Error('Server returned an invalid response. Your project might be too large.');
+            }
+
             if (data.success) {
                 setShowSavedMsg(true);
                 setTimeout(() => setShowSavedMsg(false), 3000);
             } else {
-                throw new Error(data.error);
+                throw new Error(data.error || 'Unknown error');
             }
         } catch (err: any) {
             console.error('Cloud save failed:', err);
-            alert('Failed to save to cloud: ' + err.message);
+            alert('Cloud Save Failed: ' + err.message);
         } finally {
             setIsSaving(false);
         }
