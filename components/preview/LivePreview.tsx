@@ -9,7 +9,12 @@ const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: strin
     switch (type) {
         case 'stars': return <Star fill={color} stroke="none" size={size} />;
         case 'hearts': return <Heart fill={color} stroke="none" size={size} />;
-        case 'leaves': return <Leaf fill={color} stroke="none" size={size} />;
+        case 'leaves': return (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                <path d="M12 2C12 2 4 6 4 13C4 18 8 21 12 22C16 21 20 18 20 13C20 6 12 2 12 2Z" fill={color} />
+                <path d="M12 22V12" stroke="white" strokeWidth="1" opacity="0.5" />
+            </svg>
+        );
         case 'geometric': return <Box fill={color} stroke="none" size={size} />;
         case 'flowers': return <Flower fill={color} stroke="none" size={size} />;
         case 'puzzles': return <Puzzle fill={color} stroke="none" size={size} />;

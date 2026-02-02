@@ -82,9 +82,9 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
             );
         case 'leaves':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
-                    <Path d="M11 20A7 7 0 0 1 11 6a7 7 0 0 1 7 7c0 3.87-3.13 7-7 7z" fill={color} />
-                    <Path d="M13 2.05A10.57 10.57 0 0 1 15.36 3" fill={color} opacity={0.5} />
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                    <Path d="M12 2C12 2 4 6 4 13C4 18 8 21 12 22C16 21 20 18 20 13C20 6 12 2 12 2Z" fill={color} />
+                    <Path d="M12 22V12" stroke="#ffffff" strokeWidth="1" opacity={0.5} />
                 </Svg>
             );
         case 'flowers':
@@ -134,9 +134,10 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
             );
         case 'ocean':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
-                    <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill={color} opacity={0.3} />
-                    <Path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill={color} />
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                    <Path d="M2 6c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
+                    <Path d="M2 12c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
+                    <Path d="M2 18c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
                 </Svg>
             );
         default: return null;
