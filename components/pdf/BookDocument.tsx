@@ -132,6 +132,7 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
                 <Svg width={size} height={size} viewBox="0 0 24 24">
                     <Path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" stroke={color} strokeWidth="1.5" fill="none" />
                     <Path d="M12 4l2 2m-4 0l2-2M4 12l2 2m0-4l-2 2M12 20l-2-2m4 0l-2 2M20 12l-2-2m0 4l2-2" stroke={color} strokeWidth="1.5" />
+                    <Circle cx="12" cy="12" r="1.5" fill={color} />
                 </Svg>
             );
         case 'ocean':

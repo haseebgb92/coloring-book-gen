@@ -24,10 +24,22 @@ const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: strin
             <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
                 <path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" stroke={color} strokeWidth="1.5" />
                 <path d="M12 4l2 2m-4 0l2-2M4 12l2 2m0-4l-2 2M12 20l-2-2m4 0l-2 2M20 12l-2-2m0 4l2-2" stroke={color} strokeWidth="1.5" />
+                <circle cx="12" cy="12" r="1.5" fill={color} />
             </svg>
         );
-        case 'ocean': return <Waves stroke={color} size={size} />;
-        case 'sun': return <Sun fill={color} stroke="none" size={size} />;
+        case 'ocean': return (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                <path d="M2 6c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
+                <path d="M2 12c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
+                <path d="M2 18c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
+            </svg>
+        );
+        case 'sun': return (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                <circle cx="12" cy="12" r="5" fill={color} />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeLinecap="round" />
+            </svg>
+        );
         case 'butterfly':
             return (
                 <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
