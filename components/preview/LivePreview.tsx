@@ -91,182 +91,324 @@ export function LivePreview({ state }: { state: ProjectState }) {
 
             {/* Viewport */}
             <div className="flex-1 overflow-auto flex items-center justify-center p-8 gap-1">
-                {/* Left Page (Verso) */}
-                <div
-                    className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
-                    style={pageStyle}
-                >
-                    {/* Decorative Elements - Positioned in corners OUTSIDE the content area */}
-                    {layout.showIcon && layout.iconSet && (
-                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                            <div className="absolute top-2 left-2 rotate-[-15deg] opacity-25">
-                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={64 * scale} />
+                {/* Square Format: Single Combined Page */}
+                {trimSize === '8.5x8.5' ? (
+                    <div
+                        className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
+                        style={pageStyle}
+                    >
+                        {/* Decorative Elements */}
+                        {layout.showIcon && layout.iconSet && (
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div className="absolute top-2 left-2 rotate-[-15deg] opacity-25">
+                                    <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={64 * scale} />
+                                </div>
+                                <div className="absolute top-2 right-2 rotate-[15deg] opacity-25">
+                                    <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={48 * scale} />
+                                </div>
+                                <div className="absolute bottom-10 left-4 rotate-[10deg] opacity-25">
+                                    <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={40 * scale} />
+                                </div>
+                                <div className="absolute bottom-12 right-4 rotate-[-10deg] opacity-25">
+                                    <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={56 * scale} />
+                                </div>
                             </div>
-                            <div className="absolute top-2 right-2 rotate-[15deg] opacity-25">
-                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={48 * scale} />
-                            </div>
-                            <div className="absolute bottom-10 left-4 rotate-[10deg] opacity-25">
-                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={40 * scale} />
-                            </div>
-                            <div className="absolute bottom-12 right-4 rotate-[-10deg] opacity-25">
-                                <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={56 * scale} />
-                            </div>
-                        </div>
-                    )}
+                        )}
 
-                    <div className="w-full h-full flex flex-col pt-1" style={contentStyle}>
-                        <div
-                            className="flex-1 flex flex-col items-center text-center p-6"
-                            style={{
-                                borderRadius: `${template.layout.cornerRadius}px`,
-                                border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
-                                backgroundColor: '#ffffff',
-                                position: 'relative',
-                                zIndex: 10 // Ensure content is above icons if they overlap slightly
-                            }}
-                        >
-                            <h1
-                                className="font-bold mb-4"
+                        <div className="w-full h-full flex flex-col p-1" style={{ paddingTop: `${printSettings.margins.top}in`, paddingBottom: `${printSettings.margins.bottom}in`, paddingLeft: `${printSettings.margins.outer}in`, paddingRight: `${printSettings.margins.outer}in` }}>
+                            {/* Top Half: Illustration */}
+                            {currentScene.illustration && (
+                                <div className="flex-1 mb-3 relative" style={{
+                                    borderRadius: `${template.layout.cornerRadius}px`,
+                                    border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
+                                    backgroundColor: '#ffffff',
+                                    overflow: 'hidden'
+                                }}>
+                                    <img
+                                        src={currentScene.illustration}
+                                        alt={currentScene.title}
+                                        className="absolute inset-0 w-full h-full transition-all duration-300"
+                                        style={{
+                                            objectFit: currentScene.illustrationFit || 'cover',
+                                            transform: `scale(${currentScene.illustrationScale || 1.05}) translate(${currentScene.illustrationPositionX || 0}%, ${currentScene.illustrationPositionY || 0}%)`,
+                                            borderRadius: `${template.layout.cornerRadius}px`,
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Bottom Half: Story and Words */}
+                            <div
+                                className="flex-1 flex flex-col items-center text-center p-4"
                                 style={{
-                                    fontFamily: template.fonts.heading,
-                                    color: template.colors.heading,
-                                    fontSize: `${(layout.headingSize || 28) * scale}px`
+                                    borderRadius: `${template.layout.cornerRadius}px`,
+                                    border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
+                                    backgroundColor: '#ffffff',
+                                    position: 'relative',
+                                    zIndex: 10
                                 }}
                             >
-                                {currentScene.title}
-                            </h1>
-
-                            {layout.showIcon && <div className="h-px w-24 mb-6 opacity-30" style={{ backgroundColor: template.colors.accent }} />}
-
-                            <p
-                                className="whitespace-pre-wrap mb-10"
-                                style={{
-                                    fontFamily: template.fonts.body,
-                                    color: template.colors.storyText,
-                                    fontSize: `${(layout.bodySize || 14) * scale}px`,
-                                    lineHeight: 1.6
-                                }}
-                            >
-                                {currentScene.story}
-                            </p>
-
-                            {/* Attributes/Words */}
-                            <div className="w-full space-y-4">
-                                {currentScene.words.map((word, idx) => (
-                                    <div key={idx} className="relative h-14 w-full group">
-                                        {/* Guidelines */}
-                                        <div className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
-                                            {writingSettings.guidelines.showTop && (
-                                                <div className="absolute top-0 w-full border-t" style={{ borderColor: template.colors.writingLine }}></div>
-                                            )}
-                                            {writingSettings.guidelines.showMid && (
-                                                <div className="absolute top-[50%] w-full border-t border-dashed" style={{ borderColor: template.colors.writingLine }}></div>
-                                            )}
-                                            {writingSettings.guidelines.showBase && (
-                                                <div className="absolute bottom-0 w-full border-b" style={{ borderColor: template.colors.writingLine }}></div>
-                                            )}
-                                        </div>
-
-                                        {/* Words */}
-                                        <div className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap px-4 bg-white/50 rounded pointer-events-none">
-                                            {Array.from({ length: Math.max(1, writingSettings.minRepetitions) }).map((_, rIdx) => (
-                                                <span
-                                                    key={rIdx}
-                                                    className="mr-12 select-none"
-                                                    style={{
-                                                        fontFamily: 'Codystar, cursive',
-                                                        fontSize: `${(writingSettings.practiceFontSize || 28) * scale}px`,
-                                                        color: template.colors.tracing,
-                                                        opacity: 0.9,
-                                                        fontWeight: 400
-                                                    }}
-                                                >
-                                                    {word}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Page Number */}
-                    {printSettings.pageNumbers.enabled && (
-                        <div
-                            className="absolute w-full text-center text-xs"
-                            style={{
-                                bottom: '0.25in',
-                                color: template.colors.pageNumber,
-                                fontSize: `${10 * scale}px`
-                            }}
-                        >
-                            {2 + (currentSpread * 2)}
-                        </div>
-                    )}
-                </div>
-
-                {/* Right Page (Recto) */}
-                <div
-                    className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
-                    style={pageStyle}
-                >
-                    {/* Visual Bleed Guide (Overlay) */}
-                    {printSettings.bleed && (
-                        <div className="absolute inset-0 pointer-events-none z-50 border border-red-400 border-dashed"
-                            style={{
-                                left: `${0.125 * 96 * scale}px`,
-                                top: `${0.125 * 96 * scale}px`,
-                                right: `${0.125 * 96 * scale}px`,
-                                bottom: `${0.125 * 96 * scale}px`,
-                            }}
-                        >
-                            <div className="absolute top-0 left-0 bg-red-500 text-white text-[8px] px-1">Safe Area Boundary</div>
-                        </div>
-                    )}
-
-                    <div className="w-full h-full" style={rightContentStyle}>
-                        <div
-                            className="w-full h-full relative"
-                            style={{
-                                borderRadius: `${template.layout.cornerRadius}px`,
-                                border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
-                                backgroundColor: '#ffffff',
-                                overflow: 'hidden',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
-                        >
-                            {currentScene.illustration ? (
-                                <img
-                                    src={currentScene.illustration}
-                                    alt={currentScene.title}
-                                    className="absolute inset-0 w-full h-full transition-all duration-300"
+                                <h1
+                                    className="font-bold mb-2"
                                     style={{
-                                        objectFit: currentScene.illustrationFit || 'cover',
-                                        transform: `scale(${currentScene.illustrationScale || 1.05}) translate(${currentScene.illustrationPositionX || 0}%, ${currentScene.illustrationPositionY || 0}%)`,
-                                        borderRadius: `${template.layout.cornerRadius}px`,
+                                        fontFamily: template.fonts.heading,
+                                        color: template.colors.heading,
+                                        fontSize: `${(layout.headingSize || 28) * 0.85 * scale}px`
                                     }}
-                                />
-                            ) : (
-                                <div className="text-gray-300 flex flex-col items-center">
-                                    <span className="text-xs">No Illustration</span>
+                                >
+                                    {currentScene.title}
+                                </h1>
+
+                                {layout.showIcon && <div className="h-px w-16 mb-3 opacity-30" style={{ backgroundColor: template.colors.accent }} />}
+
+                                <p
+                                    className="whitespace-pre-wrap mb-4 flex-shrink-0"
+                                    style={{
+                                        fontFamily: template.fonts.body,
+                                        color: template.colors.storyText,
+                                        fontSize: `${(layout.bodySize || 14) * 0.85 * scale}px`,
+                                        lineHeight: 1.5
+                                    }}
+                                >
+                                    {currentScene.story}
+                                </p>
+
+                                {/* Attributes/Words - Limited to 2 for space */}
+                                <div className="w-full space-y-2">
+                                    {currentScene.words.slice(0, 2).map((word, idx) => (
+                                        <div key={idx} className="relative h-10 w-full group">
+                                            {/* Guidelines */}
+                                            <div className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
+                                                {writingSettings.guidelines.showTop && (
+                                                    <div className="absolute top-0 w-full border-t" style={{ borderColor: template.colors.writingLine }}></div>
+                                                )}
+                                                {writingSettings.guidelines.showMid && (
+                                                    <div className="absolute top-[50%] w-full border-t border-dashed" style={{ borderColor: template.colors.writingLine }}></div>
+                                                )}
+                                                {writingSettings.guidelines.showBase && (
+                                                    <div className="absolute bottom-0 w-full border-b" style={{ borderColor: template.colors.writingLine }}></div>
+                                                )}
+                                            </div>
+
+                                            {/* Words */}
+                                            <div className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap px-3 bg-white/50 rounded pointer-events-none">
+                                                {Array.from({ length: Math.min(2, Math.max(1, writingSettings.minRepetitions)) }).map((_, rIdx) => (
+                                                    <span
+                                                        key={rIdx}
+                                                        className="mr-8 select-none"
+                                                        style={{
+                                                            fontFamily: 'Codystar, cursive',
+                                                            fontSize: `${(writingSettings.practiceFontSize || 28) * 0.75 * scale}px`,
+                                                            color: template.colors.tracing,
+                                                            opacity: 0.9,
+                                                            fontWeight: 400
+                                                        }}
+                                                    >
+                                                        {word}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Page Number */}
+                        {printSettings.pageNumbers.enabled && (
+                            <div
+                                className="absolute w-full text-center text-xs"
+                                style={{
+                                    bottom: '0.25in',
+                                    color: template.colors.pageNumber,
+                                    fontSize: `${10 * scale}px`
+                                }}
+                            >
+                                {currentSpread + 1}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                        {/* Other Formats: Two-Page Spread */}
+                        {/* Left Page (Verso) */}
+                        <div
+                            className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
+                            style={pageStyle}
+                        >
+                            {/* Decorative Elements - Positioned in corners OUTSIDE the content area */}
+                            {layout.showIcon && layout.iconSet && (
+                                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                    <div className="absolute top-2 left-2 rotate-[-15deg] opacity-25">
+                                        <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={64 * scale} />
+                                    </div>
+                                    <div className="absolute top-2 right-2 rotate-[15deg] opacity-25">
+                                        <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={48 * scale} />
+                                    </div>
+                                    <div className="absolute bottom-10 left-4 rotate-[10deg] opacity-25">
+                                        <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={40 * scale} />
+                                    </div>
+                                    <div className="absolute bottom-12 right-4 rotate-[-10deg] opacity-25">
+                                        <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={56 * scale} />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="w-full h-full flex flex-col pt-1" style={contentStyle}>
+                                <div
+                                    className="flex-1 flex flex-col items-center text-center p-6"
+                                    style={{
+                                        borderRadius: `${template.layout.cornerRadius}px`,
+                                        border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
+                                        backgroundColor: '#ffffff',
+                                        position: 'relative',
+                                        zIndex: 10 // Ensure content is above icons if they overlap slightly
+                                    }}
+                                >
+                                    <h1
+                                        className="font-bold mb-4"
+                                        style={{
+                                            fontFamily: template.fonts.heading,
+                                            color: template.colors.heading,
+                                            fontSize: `${(layout.headingSize || 28) * scale}px`
+                                        }}
+                                    >
+                                        {currentScene.title}
+                                    </h1>
+
+                                    {layout.showIcon && <div className="h-px w-24 mb-6 opacity-30" style={{ backgroundColor: template.colors.accent }} />}
+
+                                    <p
+                                        className="whitespace-pre-wrap mb-10"
+                                        style={{
+                                            fontFamily: template.fonts.body,
+                                            color: template.colors.storyText,
+                                            fontSize: `${(layout.bodySize || 14) * scale}px`,
+                                            lineHeight: 1.6
+                                        }}
+                                    >
+                                        {currentScene.story}
+                                    </p>
+
+                                    {/* Attributes/Words */}
+                                    <div className="w-full space-y-4">
+                                        {currentScene.words.map((word, idx) => (
+                                            <div key={idx} className="relative h-14 w-full group">
+                                                {/* Guidelines */}
+                                                <div className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
+                                                    {writingSettings.guidelines.showTop && (
+                                                        <div className="absolute top-0 w-full border-t" style={{ borderColor: template.colors.writingLine }}></div>
+                                                    )}
+                                                    {writingSettings.guidelines.showMid && (
+                                                        <div className="absolute top-[50%] w-full border-t border-dashed" style={{ borderColor: template.colors.writingLine }}></div>
+                                                    )}
+                                                    {writingSettings.guidelines.showBase && (
+                                                        <div className="absolute bottom-0 w-full border-b" style={{ borderColor: template.colors.writingLine }}></div>
+                                                    )}
+                                                </div>
+
+                                                {/* Words */}
+                                                <div className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap px-4 bg-white/50 rounded pointer-events-none">
+                                                    {Array.from({ length: Math.max(1, writingSettings.minRepetitions) }).map((_, rIdx) => (
+                                                        <span
+                                                            key={rIdx}
+                                                            className="mr-12 select-none"
+                                                            style={{
+                                                                fontFamily: 'Codystar, cursive',
+                                                                fontSize: `${(writingSettings.practiceFontSize || 28) * scale}px`,
+                                                                color: template.colors.tracing,
+                                                                opacity: 0.9,
+                                                                fontWeight: 400
+                                                            }}
+                                                        >
+                                                            {word}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Page Number */}
+                            {printSettings.pageNumbers.enabled && (
+                                <div
+                                    className="absolute w-full text-center text-xs"
+                                    style={{
+                                        bottom: '0.25in',
+                                        color: template.colors.pageNumber,
+                                        fontSize: `${10 * scale}px`
+                                    }}
+                                >
+                                    {2 + (currentSpread * 2)}
                                 </div>
                             )}
                         </div>
-                    </div>
 
-                    {/* Page Number */}
-                    {printSettings.pageNumbers.enabled && (
+                        {/* Right Page (Recto) */}
                         <div
-                            className="absolute w-full text-center text-xs"
-                            style={{ bottom: '0.25in', color: template.colors.pageNumber }}
+                            className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
+                            style={pageStyle}
                         >
-                            {3 + (currentSpread * 2)}
+                            {/* Visual Bleed Guide (Overlay) */}
+                            {printSettings.bleed && (
+                                <div className="absolute inset-0 pointer-events-none z-50 border border-red-400 border-dashed"
+                                    style={{
+                                        left: `${0.125 * 96 * scale}px`,
+                                        top: `${0.125 * 96 * scale}px`,
+                                        right: `${0.125 * 96 * scale}px`,
+                                        bottom: `${0.125 * 96 * scale}px`,
+                                    }}
+                                >
+                                    <div className="absolute top-0 left-0 bg-red-500 text-white text-[8px] px-1">Safe Area Boundary</div>
+                                </div>
+                            )}
+
+                            <div className="w-full h-full" style={rightContentStyle}>
+                                <div
+                                    className="w-full h-full relative"
+                                    style={{
+                                        borderRadius: `${template.layout.cornerRadius}px`,
+                                        border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
+                                        backgroundColor: '#ffffff',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    {currentScene.illustration ? (
+                                        <img
+                                            src={currentScene.illustration}
+                                            alt={currentScene.title}
+                                            className="absolute inset-0 w-full h-full transition-all duration-300"
+                                            style={{
+                                                objectFit: currentScene.illustrationFit || 'cover',
+                                                transform: `scale(${currentScene.illustrationScale || 1.05}) translate(${currentScene.illustrationPositionX || 0}%, ${currentScene.illustrationPositionY || 0}%)`,
+                                                borderRadius: `${template.layout.cornerRadius}px`,
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="text-gray-300 flex flex-col items-center">
+                                            <span className="text-xs">No Illustration</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Page Number */}
+                            {printSettings.pageNumbers.enabled && (
+                                <div
+                                    className="absolute w-full text-center text-xs"
+                                    style={{ bottom: '0.25in', color: template.colors.pageNumber }}
+                                >
+                                    {3 + (currentSpread * 2)}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </>
+                )}
             </div>
         </div>
     );
