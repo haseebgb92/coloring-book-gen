@@ -3,6 +3,7 @@
 import React from 'react';
 import { useProjectStore } from '@/lib/store';
 import { Trash2, MoveUp, MoveDown, Image as ImageIcon } from 'lucide-react';
+import { getImageSrc } from '@/lib/utils';
 
 export function ScenesSection() {
     const scenes = useProjectStore(s => s.scenes);
@@ -133,7 +134,7 @@ export function ScenesSection() {
                                     <div className="flex items-center gap-2">
                                         {scene.illustration ? (
                                             <div className="relative w-16 h-16 border rounded bg-gray-100 shrink-0">
-                                                <img src={scene.illustration} alt="preview" className={`w-full h-full rounded ${scene.illustrationFit === 'cover' ? 'object-cover' : 'object-contain'}`} />
+                                                <img src={getImageSrc(scene.illustration)} alt="preview" className={`w-full h-full rounded ${scene.illustrationFit === 'cover' ? 'object-cover' : 'object-contain'}`} />
                                                 <button
                                                     onClick={() => updateScene(scene.id, { illustration: null })}
                                                     className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"

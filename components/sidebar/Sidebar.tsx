@@ -69,36 +69,56 @@ export function Sidebar({ className }: { className?: string }) {
         setIsSaving(true);
 
         try {
-            // 1. Auto-optimize scenes if they contain large base64 strings
-            const { compressImage } = await import('@/lib/image-utils');
-            let optimizedState = { ...state };
-            let wasOptimized = false;
+            // 1. Prepare an optimized copy for the cloud
+            let cloudState = { ...state };
 
-            const optimizedScenes = await Promise.all(state.scenes.map(async (scene) => {
-                // If larger than ~1MB as base64 (approx 1.3M chars), compress it
-                if (scene.illustration && scene.illustration.length > 1300000) {
-                    try {
-                        const compressed = await compressImage(scene.illustration);
-                        wasOptimized = true;
-                        return { ...scene, illustration: compressed };
-                    } catch (e) {
-                        return scene;
+            // Helper to upload an image and return its cloud reference
+            const offloadToCloud = async (imageData: string | null) => {
+                if (!imageData || !imageData.startsWith('data:')) return imageData;
+
+                // If it's a large image, upload it separately
+                try {
+                    const response = await fetch('/api/image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: imageData })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        return `cloud:${result.imageId}`;
                     }
+                } catch (e) {
+                    console.error('Failed to offload image', e);
                 }
-                return scene;
+                return imageData;
+            };
+
+            // 2. Offload Illustrations (Scenes)
+            const offloadedScenes = await Promise.all(state.scenes.map(async (scene) => {
+                const cloudUrl = await offloadToCloud(scene.illustration);
+                return { ...scene, illustration: cloudUrl };
             }));
 
-            if (wasOptimized) {
-                optimizedState.scenes = optimizedScenes;
-                // Update local store too so we don't re-compress next time
-                useProjectStore.setState({ scenes: optimizedScenes });
-            }
+            // 3. Offload Front Matter & Ending Pages
+            const offloadedFront = await Promise.all(state.frontMatter.map(async (p) => {
+                const cloudUrl = await offloadToCloud(p.image);
+                return { ...p, image: cloudUrl };
+            }));
 
-            const payload = JSON.stringify(optimizedState);
+            const offloadedEnd = await Promise.all(state.endingPages.map(async (p) => {
+                const cloudUrl = await offloadToCloud(p.image);
+                return { ...p, image: cloudUrl };
+            }));
+
+            cloudState.scenes = offloadedScenes;
+            cloudState.frontMatter = offloadedFront;
+            cloudState.endingPages = offloadedEnd;
+
+            const payload = JSON.stringify(cloudState);
             const sizeInMb = payload.length / (1024 * 1024);
 
             if (sizeInMb > 4.5) {
-                throw new Error(`Project is still too large (${sizeInMb.toFixed(1)}MB). Try removing some scenes or using smaller illustrations.`);
+                throw new Error(`Project JSON is still too large (${sizeInMb.toFixed(1)}MB) even after offloading images.`);
             }
 
             const response = await fetch('/api/project', {
@@ -107,18 +127,12 @@ export function Sidebar({ className }: { className?: string }) {
                 body: payload,
             });
 
-            // Check for non-JSON or error status before parsing
-            if (response.status === 413) {
-                throw new Error('Project is too large to save to the cloud. Try removing large images.');
-            }
-
             const text = await response.text();
             let data;
             try {
                 data = JSON.parse(text);
             } catch (pErr) {
-                console.error('Raw response:', text);
-                throw new Error('Server returned an invalid response. Your project might be too large.');
+                throw new Error('Server returned an invalid response.');
             }
 
             if (data.success) {

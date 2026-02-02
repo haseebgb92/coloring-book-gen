@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { ProjectState, Scene } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, getImageSrc } from '@/lib/utils';
 import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight, Star, Heart, Leaf, Box, Flower, Puzzle, Cloud, Music, Snowflake, Waves, Sun } from 'lucide-react';
 
 const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
@@ -290,7 +290,7 @@ export function LivePreview({ state }: { state: ProjectState }) {
                         >
                             {currentScene.illustration ? (
                                 <img
-                                    src={currentScene.illustration}
+                                    src={getImageSrc(currentScene.illustration)}
                                     alt={currentScene.title}
                                     className="absolute inset-0 w-full h-full transition-all duration-300"
                                     style={{

@@ -5,6 +5,7 @@ import { useProjectStore } from '@/lib/store';
 import { PageContent } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import { Plus, Trash2, GripVertical, Image as ImageIcon } from 'lucide-react';
+import { getImageSrc } from '@/lib/utils';
 
 export function FrontMatterSection() {
     const pages = useProjectStore(s => s.frontMatter);
@@ -89,7 +90,7 @@ export function FrontMatterSection() {
                             <div className="flex items-center gap-2">
                                 {page.image ? (
                                     <div className="relative w-10 h-10 border rounded bg-gray-100">
-                                        <img src={page.image} className="w-full h-full object-cover" />
+                                        <img src={getImageSrc(page.image)} className="w-full h-full object-cover" />
                                         <button onClick={() => updatePage(page.id, { image: null })} className="absolute -top-1 -right-1 bg-red-500 text-white w-3 h-3 flex items-center justify-center rounded-full text-[8px]">×</button>
                                     </div>
                                 ) : (

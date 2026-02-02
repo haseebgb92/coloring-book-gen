@@ -3,6 +3,7 @@ import { Document, Page, Text, View, Image, StyleSheet, Svg, Path, Circle, Rect 
 import { ProjectState, Scene, PageContent, TemplateConfig, WritingPracticeSettings } from '@/lib/types';
 import { TEMPLATES, INITIAL_PROJECT_STATE } from '@/lib/templates';
 import { registerFonts, REGISTERED_FONTS } from '@/lib/fonts-config';
+import { getImageSrc } from '@/lib/utils';
 
 // Initialize fonts once
 registerFonts();
@@ -261,7 +262,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                         <View style={{ marginTop: pageTop, marginBottom: pageBottom, marginLeft: curLeft, marginRight: curRight, flex: 1, zIndex: 10 }}>
                             <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                                 {page.title && <Text style={styles.heading}>{page.title}</Text>}
-                                {page.image && <View style={{ width: '80%', height: '50%', marginBottom: 20 }}><Image src={page.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></View>}
+                                {page.image && <View style={{ width: '80%', height: '50%', marginBottom: 20 }}><Image src={getImageSrc(page.image)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></View>}
                                 {page.text && <Text style={[styles.text, { textAlign: 'center' }]}>{page.text}</Text>}
                             </ContentFrame>
                         </View>
@@ -358,7 +359,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                             <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
                             <View style={{ marginTop: page2Margins.top, marginBottom: page2Margins.bottom, marginLeft: page2Margins.left, marginRight: page2Margins.right, flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
                                 <View style={{ width: pageWidth - (page2Margins.left + page2Margins.right), height: pageHeight - (page2Margins.top + page2Margins.bottom), backgroundColor: '#ffffff', position: 'relative', overflow: 'hidden', borderRadius: safeCornerRadius }}>
-                                    {scene.illustration && <Image src={scene.illustration!} style={{ position: 'absolute', top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`, left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`, width: `${getNum(scene.illustrationScale, 1.05) * 100}%`, height: `${getNum(scene.illustrationScale, 1.05) * 100}%`, objectFit: 'cover' }} />}
+                                    {scene.illustration && <Image src={getImageSrc(scene.illustration)!} style={{ position: 'absolute', top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`, left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`, width: `${getNum(scene.illustrationScale, 1.05) * 100}%`, height: `${getNum(scene.illustrationScale, 1.05) * 100}%`, objectFit: 'cover' }} />}
                                     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderWidth: borderWeight, borderColor: colors.border, borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid', borderRadius: safeCornerRadius }} />
                                 </View>
                             </View>
