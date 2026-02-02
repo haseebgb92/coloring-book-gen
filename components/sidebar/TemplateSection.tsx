@@ -106,6 +106,21 @@ export function TemplateSection() {
                             )} />
                         </button>
                     </div>
+
+                    {currentTemplate.layout.showIcon && (
+                        <div>
+                            <div className="flex justify-between mb-1">
+                                <span className="text-xs text-gray-600">Ornament Transparency</span>
+                                <span className="text-xs font-mono text-blue-600">{Math.round((currentTemplate.layout.iconOpacity ?? 0.2) * 100)}%</span>
+                            </div>
+                            <input
+                                type="range" min="0.05" max="0.8" step="0.05"
+                                value={currentTemplate.layout.iconOpacity ?? 0.2}
+                                onChange={(e) => updateLayout({ iconOpacity: parseFloat(e.target.value) })}
+                                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
+                        </div>
+                    )}
                 </div>
             </section>
         </div>

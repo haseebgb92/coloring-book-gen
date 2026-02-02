@@ -57,7 +57,8 @@ export type TemplateConfig = {
         borderStyle: 'none' | 'solid' | 'dashed' | 'double' | 'fancy';
         cornerRadius: number;
         showIcon: boolean;
-        iconSet?: 'stars' | 'leaves' | 'hearts' | 'geometric' | 'flowers' | 'puzzles' | 'clouds' | 'music' | 'winter' | 'ocean';
+        iconSet?: 'stars' | 'leaves' | 'hearts' | 'geometric' | 'flowers' | 'puzzles' | 'clouds' | 'music' | 'winter' | 'ocean' | 'sun' | 'butterfly' | 'dinosaur' | 'candy';
+        iconOpacity?: number; // 0 to 1
         headingSize: number;
         bodySize: number;
     };

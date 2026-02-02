@@ -20,6 +20,7 @@ export const TEMPLATES: TemplateConfig[] = [
             cornerRadius: 12,
             showIcon: true,
             iconSet: 'geometric',
+            iconOpacity: 0.15,
             headingSize: 28,
             bodySize: 14
         },
@@ -43,6 +44,7 @@ export const TEMPLATES: TemplateConfig[] = [
             cornerRadius: 32,
             showIcon: true,
             iconSet: 'hearts',
+            iconOpacity: 0.2,
             headingSize: 38,
             bodySize: 18
         },
@@ -66,6 +68,7 @@ export const TEMPLATES: TemplateConfig[] = [
             cornerRadius: 8,
             showIcon: true,
             iconSet: 'clouds',
+            iconOpacity: 0.25,
             headingSize: 32,
             bodySize: 16
         },
@@ -89,6 +92,7 @@ export const TEMPLATES: TemplateConfig[] = [
             cornerRadius: 40,
             showIcon: true,
             iconSet: 'ocean',
+            iconOpacity: 0.2,
             headingSize: 32,
             bodySize: 16
         },
@@ -112,6 +116,7 @@ export const TEMPLATES: TemplateConfig[] = [
             cornerRadius: 15,
             showIcon: true,
             iconSet: 'music',
+            iconOpacity: 0.15,
             headingSize: 36,
             bodySize: 17
         },
@@ -121,20 +126,21 @@ export const TEMPLATES: TemplateConfig[] = [
         name: 'Galactic Voyage',
         fonts: { heading: 'Orbitron', body: 'Exo 2', tracing: 'Codystar' },
         colors: {
-            background: '#1e1b4b',
-            heading: '#a5b4fc',
-            storyText: '#c7d2fe',
-            tracing: '#4338ca',
-            writingLine: '#312e81',
+            background: '#f5f3ff', // Lightened from deep indigo
+            heading: '#4338ca',
+            storyText: '#3730a3',
+            tracing: '#c4b5fd',
+            writingLine: '#ede9fe',
             border: '#818cf8',
             accent: '#6366f1',
-            pageNumber: '#a5b4fc',
+            pageNumber: '#4338ca',
         },
         layout: {
             borderStyle: 'solid',
             cornerRadius: 12,
             showIcon: true,
             iconSet: 'stars',
+            iconOpacity: 0.2,
             headingSize: 30,
             bodySize: 14
         },
@@ -158,6 +164,7 @@ export const TEMPLATES: TemplateConfig[] = [
             cornerRadius: 24,
             showIcon: true,
             iconSet: 'winter',
+            iconOpacity: 0.15,
             headingSize: 32,
             bodySize: 16
         },
@@ -181,8 +188,105 @@ export const TEMPLATES: TemplateConfig[] = [
             cornerRadius: 20,
             showIcon: true,
             iconSet: 'leaves',
+            iconOpacity: 0.15,
             headingSize: 34,
             bodySize: 16
+        },
+    },
+    {
+        id: 'sunshine-joy',
+        name: 'Sunshine Joy',
+        fonts: { heading: 'Outfit', body: 'Quicksand', tracing: 'Codystar' },
+        colors: {
+            background: '#fffbeb',
+            heading: '#92400e',
+            storyText: '#b45309',
+            tracing: '#fde68a',
+            writingLine: '#fef3c7',
+            border: '#f59e0b',
+            accent: '#fbbf24',
+            pageNumber: '#92400e',
+        },
+        layout: {
+            borderStyle: 'solid',
+            cornerRadius: 24,
+            showIcon: true,
+            iconSet: 'sun',
+            iconOpacity: 0.25,
+            headingSize: 32,
+            bodySize: 16
+        },
+    },
+    {
+        id: 'spring-butterfly',
+        name: 'Spring Butterfly',
+        fonts: { heading: 'Bubblegum Sans', body: 'Indie Flower', tracing: 'Codystar' },
+        colors: {
+            background: '#fdf4ff',
+            heading: '#701a75',
+            storyText: '#86198f',
+            tracing: '#f5d0fe',
+            writingLine: '#fae8ff',
+            border: '#d946ef',
+            accent: '#f0abfc',
+            pageNumber: '#701a75',
+        },
+        layout: {
+            borderStyle: 'solid',
+            cornerRadius: 30,
+            showIcon: true,
+            iconSet: 'butterfly',
+            iconOpacity: 0.2,
+            headingSize: 34,
+            bodySize: 16
+        },
+    },
+    {
+        id: 'dino-tracks',
+        name: 'Dino Tracks',
+        fonts: { heading: 'Architects Daughter', body: 'Andika', tracing: 'Codystar' },
+        colors: {
+            background: '#f7fee7',
+            heading: '#3f6212',
+            storyText: '#4d7c0f',
+            tracing: '#bef264',
+            writingLine: '#ecfccb',
+            border: '#84cc16',
+            accent: '#a3e635',
+            pageNumber: '#3f6212',
+        },
+        layout: {
+            borderStyle: 'solid',
+            cornerRadius: 12,
+            showIcon: true,
+            iconSet: 'dinosaur',
+            iconOpacity: 0.18,
+            headingSize: 32,
+            bodySize: 16
+        },
+    },
+    {
+        id: 'sweet-treats',
+        name: 'Sweet Treats',
+        fonts: { heading: 'Indie Flower', body: 'Quicksand', tracing: 'Codystar' },
+        colors: {
+            background: '#fff1f2',
+            heading: '#881337',
+            storyText: '#9f1239',
+            tracing: '#fecdd3',
+            writingLine: '#ffe4e6',
+            border: '#fb7185',
+            accent: '#fda4af',
+            pageNumber: '#881337',
+        },
+        layout: {
+            borderStyle: 'dashed',
+            cornerRadius: 40,
+            showIcon: true,
+            iconSet: 'candy',
+            iconOpacity: 0.2,
+            headingSize: 36,
+            bodySize: 17
         },
     },
 ];

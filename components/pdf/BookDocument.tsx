@@ -21,7 +21,7 @@ const DecorativeLayer = ({ layout, colors, bleedPt }: {
 }) => {
     if (!layout.showIcon || !layout.iconSet) return null;
 
-    const opacity = 0.12; // Lowered to be subtle exactly as in preview
+    const opacity = layout.iconOpacity ?? 0.12;
 
     return (
         <View style={{
@@ -139,6 +139,35 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
                     <Path d="M2 6c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
                     <Path d="M2 12c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
                     <Path d="M2 18c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
+                </Svg>
+            );
+        case 'sun':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                    <Circle cx="12" cy="12" r="5" fill={color} />
+                    <Path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeLinecap="round" />
+                </Svg>
+            );
+        case 'butterfly':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                    <Path d="M12 10c0-4 4-6 6-4s2 6-2 8c4 2 4 8 0 10s-8-2-4-10c0 0-4 2-8 0s-4-8 0-10s6 0 6 4" fill={color} fillOpacity="0.4" />
+                    <Path d="M12 7v10" stroke={color} strokeWidth="2" strokeLinecap="round" />
+                </Svg>
+            );
+        case 'dinosaur':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                    <Path d="M4 18c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4zM16 18c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4z" fill={color} fillOpacity="0.3" />
+                    <Path d="M8 14h8V10l3-2h3M2 14l3-2" stroke={color} strokeWidth="2" />
+                </Svg>
+            );
+        case 'candy':
+            return (
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                    <Circle cx="12" cy="12" r="6" fill={color} fillOpacity="0.3" />
+                    <Path d="M7 7l10 10M17 7L7 10" stroke={color} />
+                    <Path d="M12 6v12M6 12h12" stroke={color} opacity="0.5" />
                 </Svg>
             );
         default: return null;

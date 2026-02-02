@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ProjectState, Scene } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight, Star, Heart, Leaf, Box, Flower, Puzzle, Cloud, Music, Snowflake, Waves } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, ChevronLeft, ChevronRight, Star, Heart, Leaf, Box, Flower, Puzzle, Cloud, Music, Snowflake, Waves, Sun } from 'lucide-react';
 
 const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
     switch (type) {
@@ -22,6 +22,29 @@ const DecorativeIcon = ({ type, color, size = 16 }: { type: string, color: strin
         case 'music': return <Music fill={color} stroke="none" size={size} />;
         case 'winter': return <Snowflake stroke={color} size={size} />;
         case 'ocean': return <Waves stroke={color} size={size} />;
+        case 'sun': return <Sun fill={color} stroke="none" size={size} />;
+        case 'butterfly':
+            return (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                    <path d="M12 10c0-4 4-6 6-4s2 6-2 8c4 2 4 8 0 10s-8-2-4-10c0 0-4 2-8 0s-4-8 0-10s6 0 6 4" fill={color} fillOpacity="0.4" />
+                    <path d="M12 7v10" stroke={color} strokeWidth="2" strokeLinecap="round" />
+                </svg>
+            );
+        case 'dinosaur':
+            return (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                    <path d="M4 18c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4zM16 18c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4z" fill={color} fillOpacity="0.3" />
+                    <path d="M8 14h8V10l3-2h3M2 14l3-2" stroke={color} strokeWidth="2" />
+                </svg>
+            );
+        case 'candy':
+            return (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                    <circle cx="12" cy="12" r="6" fill={color} fillOpacity="0.3" />
+                    <path d="M7 7l10 10M17 7L7 10" stroke={color} />
+                    <path d="M12 6v12M6 12h12" stroke={color} opacity="0.5" />
+                </svg>
+            );
         default: return null;
     }
 };
@@ -60,10 +83,14 @@ export function LivePreview({ state }: { state: ProjectState }) {
 
     // Page Style
     const pageStyle = {
-        width: `${width * 96 * scale}px`,
-        height: `${height * 96 * scale}px`,
+        width: `${(width + (printSettings.bleed ? 0.25 : 0)) * 96 * scale}px`,
+        height: `${(height + (printSettings.bleed ? 0.25 : 0)) * 96 * scale}px`,
         backgroundColor: template.colors.background,
+        position: 'relative' as const,
+        overflow: 'hidden' as const,
     };
+
+    const bleedOffset = printSettings.bleed ? 0.125 * 96 * scale : 0;
 
     const contentStyle = {
         paddingTop: `${printSettings.margins.top}in`,
@@ -103,23 +130,28 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
                     style={pageStyle}
                 >
-                    {/* Decorative Elements - Positioned in corners OUTSIDE the content area */}
+                    {/* Decorative Elements */}
                     {layout.showIcon && layout.iconSet && (
-                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                            <div className="absolute top-2 left-2 rotate-[-15deg] opacity-25">
+                        <div className="absolute inset-0 pointer-events-none">
+                            <div className="absolute top-4 left-4 rotate-[-15deg]" style={{ opacity: layout.iconOpacity ?? 0.25 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={64 * scale} />
                             </div>
-                            <div className="absolute top-2 right-2 rotate-[15deg] opacity-25">
+                            <div className="absolute top-4 right-4 rotate-[15deg]" style={{ opacity: layout.iconOpacity ?? 0.25 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={48 * scale} />
                             </div>
-                            <div className="absolute bottom-10 left-4 rotate-[10deg] opacity-25">
+                            <div className="absolute bottom-10 left-6 rotate-[10deg]" style={{ opacity: layout.iconOpacity ?? 0.25 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={40 * scale} />
                             </div>
-                            <div className="absolute bottom-12 right-4 rotate-[-10deg] opacity-25">
+                            <div className="absolute bottom-12 right-6 rotate-[-10deg]" style={{ opacity: layout.iconOpacity ?? 0.25 }}>
                                 <DecorativeIcon type={layout.iconSet} color={template.colors.accent} size={56 * scale} />
                             </div>
                         </div>
                     )}
+
+                    {/* Bleed & Gutter Guides */}
+                    <div className="absolute inset-0 pointer-events-none z-50 border border-blue-400 border-dashed opacity-20" style={{ margin: `${bleedOffset}px` }}></div>
+                    {!isSquare && <div className="absolute top-0 right-0 bottom-0 w-px border-l border-dashed border-red-400 opacity-40 z-50"></div>} {/* Gutter indicator for Left Page */}
+
 
                     <div className="w-full h-full flex flex-col pt-1" style={contentStyle}>
                         <div
@@ -220,19 +252,10 @@ export function LivePreview({ state }: { state: ProjectState }) {
                     className="bg-white shadow-lg relative shrink-0 transition-transform origin-center"
                     style={pageStyle}
                 >
-                    {/* Visual Bleed Guide (Overlay) */}
-                    {printSettings.bleed && (
-                        <div className="absolute inset-0 pointer-events-none z-50 border border-red-400 border-dashed"
-                            style={{
-                                left: `${0.125 * 96 * scale}px`,
-                                top: `${0.125 * 96 * scale}px`,
-                                right: `${0.125 * 96 * scale}px`,
-                                bottom: `${0.125 * 96 * scale}px`,
-                            }}
-                        >
-                            <div className="absolute top-0 left-0 bg-red-500 text-white text-[8px] px-1">Safe Area Boundary</div>
-                        </div>
-                    )}
+                    {/* Bleed & Gutter Guides */}
+                    <div className="absolute inset-0 pointer-events-none z-50 border border-blue-400 border-dashed opacity-20" style={{ margin: `${bleedOffset}px` }}></div>
+                    {!isSquare && <div className="absolute top-0 left-0 bottom-0 w-px border-l border-dashed border-red-400 opacity-40 z-50"></div>} {/* Gutter indicator for Right Page */}
+
 
                     <div className="w-full h-full" style={rightContentStyle}>
                         <div
