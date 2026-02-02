@@ -51,6 +51,8 @@ export function LivePreview({ state }: { state: ProjectState }) {
         );
     }
 
+    const isSquare = trimSize === '8.5x8.5';
+
     // Page Style
     const pageStyle = {
         width: `${width * 96 * scale}px`,
@@ -61,15 +63,15 @@ export function LivePreview({ state }: { state: ProjectState }) {
     const contentStyle = {
         paddingTop: `${printSettings.margins.top}in`,
         paddingBottom: `${printSettings.margins.bottom}in`,
-        paddingLeft: `${printSettings.margins.outer}in`,
-        paddingRight: `${printSettings.margins.inner}in`,
+        paddingLeft: isSquare ? `${printSettings.margins.outer}in` : `${printSettings.margins.outer}in`,
+        paddingRight: isSquare ? `${printSettings.margins.outer}in` : `${printSettings.margins.inner}in`,
     };
 
     const rightContentStyle = {
         paddingTop: `${printSettings.margins.top}in`,
         paddingBottom: `${printSettings.margins.bottom}in`,
-        paddingLeft: `${printSettings.margins.inner}in`,
-        paddingRight: `${printSettings.margins.outer}in`,
+        paddingLeft: isSquare ? `${printSettings.margins.outer}in` : `${printSettings.margins.inner}in`,
+        paddingRight: isSquare ? `${printSettings.margins.outer}in` : `${printSettings.margins.outer}in`,
     };
 
     return (
@@ -116,7 +118,7 @@ export function LivePreview({ state }: { state: ProjectState }) {
 
                     <div className="w-full h-full flex flex-col pt-1" style={contentStyle}>
                         <div
-                            className="flex-1 flex flex-col items-center text-center p-6"
+                            className="flex-1 flex flex-col items-center text-center p-6 overflow-hidden"
                             style={{
                                 borderRadius: `${template.layout.cornerRadius}px`,
                                 border: template.layout.borderStyle !== 'none' ? `2px ${template.layout.borderStyle} ${template.colors.border}` : undefined,
@@ -126,34 +128,36 @@ export function LivePreview({ state }: { state: ProjectState }) {
                             }}
                         >
                             <h1
-                                className="font-bold mb-4"
+                                className="font-bold mb-4 shrink-0"
                                 style={{
                                     fontFamily: template.fonts.heading,
                                     color: template.colors.heading,
-                                    fontSize: `${(layout.headingSize || 28) * scale}px`
+                                    fontSize: `${(layout.headingSize || 28) * (isSquare ? 0.8 : 1) * scale}px`,
+                                    marginBottom: isSquare ? `${10 * scale}px` : `${16 * scale}px`
                                 }}
                             >
                                 {currentScene.title}
                             </h1>
 
-                            {layout.showIcon && <div className="h-px w-24 mb-6 opacity-30" style={{ backgroundColor: template.colors.accent }} />}
+                            {layout.showIcon && <div className="h-px w-24 mb-6 opacity-30 shrink-0" style={{ backgroundColor: template.colors.accent, marginBottom: isSquare ? `${10 * scale}px` : `${24 * scale}px`, width: isSquare ? `${60 * scale}px` : `${96 * scale}px` }} />}
 
                             <p
-                                className="whitespace-pre-wrap mb-10"
+                                className="whitespace-pre-wrap mb-10 overflow-hidden"
                                 style={{
                                     fontFamily: template.fonts.body,
                                     color: template.colors.storyText,
-                                    fontSize: `${(layout.bodySize || 14) * scale}px`,
-                                    lineHeight: 1.6
+                                    fontSize: `${(layout.bodySize || 14) * (isSquare ? 0.9 : 1) * scale}px`,
+                                    lineHeight: isSquare ? 1.4 : 1.6,
+                                    marginBottom: isSquare ? `${20 * scale}px` : `${40 * scale}px`
                                 }}
                             >
                                 {currentScene.story}
                             </p>
 
                             {/* Attributes/Words */}
-                            <div className="w-full space-y-4">
+                            <div className="w-full space-y-4" style={{ marginTop: isSquare ? 'auto' : undefined, gap: isSquare ? `${10 * scale}px` : `${16 * scale}px` }}>
                                 {currentScene.words.map((word, idx) => (
-                                    <div key={idx} className="relative h-14 w-full group">
+                                    <div key={idx} className="relative w-full group shrink-0" style={{ height: isSquare ? `${35 * scale}px` : `${56 * scale}px` }}>
                                         {/* Guidelines */}
                                         <div className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
                                             {writingSettings.guidelines.showTop && (
@@ -172,13 +176,14 @@ export function LivePreview({ state }: { state: ProjectState }) {
                                             {Array.from({ length: Math.max(1, writingSettings.minRepetitions) }).map((_, rIdx) => (
                                                 <span
                                                     key={rIdx}
-                                                    className="mr-12 select-none"
+                                                    className="select-none"
                                                     style={{
                                                         fontFamily: 'Codystar, cursive',
-                                                        fontSize: `${(writingSettings.practiceFontSize || 28) * scale}px`,
+                                                        fontSize: `${(writingSettings.practiceFontSize || 28) * (isSquare ? 0.8 : 1) * scale}px`,
                                                         color: template.colors.tracing,
                                                         opacity: 0.9,
-                                                        fontWeight: 400
+                                                        fontWeight: 400,
+                                                        marginRight: isSquare ? `${20 * scale}px` : `${48 * scale}px`
                                                     }}
                                                 >
                                                     {word}

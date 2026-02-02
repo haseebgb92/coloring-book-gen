@@ -197,7 +197,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
         <Document title={state.name || 'Coloring Book'}>
             {/* Front Matter */}
             {(state.frontMatter || []).map((page, idx) => (
-                <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
+                <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
                     <View style={{ marginTop: marginTop, marginBottom: marginBottom, marginLeft: marginLeft, marginRight: marginRight, flex: 1 }}>
                         <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                             {page.title && <Text style={styles.heading}>{page.title}</Text>}
@@ -226,25 +226,55 @@ export function BookDocument({ state }: { state: ProjectState }) {
                     right: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
 
+                const isSquare = trimSize === '8.5x8.5';
+
                 // Return two-page spread layout for all formats
                 return (
                     <React.Fragment key={scene.id || idx}>
-                        <Page size={[pageWidth, pageHeight]} style={styles.page}>
+                        <Page size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
                             <View style={{ marginTop: m.top, marginBottom: m.bottom, marginLeft: m.left, marginRight: m.right, flex: 1 }}>
                                 <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
-                                    {scene.title && <Text style={styles.heading}>{scene.title}</Text>}
-                                    {layout.showIcon && <View style={{ height: 1, width: 80, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 20 }} />}
-                                    {scene.story && <Text style={[styles.text, { textAlign: 'center' }]}>{scene.story}</Text>}
-                                    <View style={{ marginTop: 40, width: '100%' }}>
+                                    {scene.title && (
+                                        <Text style={[
+                                            styles.heading,
+                                            isSquare ? { fontSize: (layout.headingSize || 30) * 0.8, marginBottom: 10 } : {}
+                                        ]}>
+                                            {scene.title}
+                                        </Text>
+                                    )}
+                                    {layout.showIcon && (
+                                        <View style={{
+                                            height: 1,
+                                            width: isSquare ? 60 : 80,
+                                            backgroundColor: colors.accent,
+                                            opacity: 0.3,
+                                            marginBottom: isSquare ? 10 : 20
+                                        }} />
+                                    )}
+                                    {scene.story && (
+                                        <Text style={[
+                                            styles.text,
+                                            { textAlign: 'center' },
+                                            isSquare ? { fontSize: (layout.bodySize || 14) * 0.9, lineHeight: 1.4 } : {}
+                                        ]}>
+                                            {scene.story}
+                                        </Text>
+                                    )}
+                                    <View style={{ marginTop: isSquare ? 20 : 40, width: '100%' }}>
                                         {scene.words?.map((word, wIdx) => (
-                                            <View key={wIdx} style={styles.practiceRow}>
-                                                <View style={{ position: 'relative', height: 45, width: '100%', marginBottom: 8 }}>
+                                            <View key={wIdx} style={[styles.practiceRow, isSquare ? { marginTop: 10, marginBottom: 5 } : {}]}>
+                                                <View style={{ position: 'relative', height: isSquare ? 35 : 45, width: '100%', marginBottom: isSquare ? 4 : 8 }}>
                                                     {writingSettings.guidelines.showTop && <View style={[styles.writingLine, { top: 0 }]} />}
-                                                    {writingSettings.guidelines.showMid && <View style={[styles.writingLine, { top: 22.5, borderBottomStyle: 'dashed' }]} />}
-                                                    {writingSettings.guidelines.showBase && <View style={[styles.writingLine, { top: 45 }]} />}
-                                                    <View style={{ flexDirection: 'row', position: 'absolute', top: 5, left: 10 }}>
+                                                    {writingSettings.guidelines.showMid && <View style={[styles.writingLine, { top: isSquare ? 17.5 : 22.5, borderBottomStyle: 'dashed' }]} />}
+                                                    {writingSettings.guidelines.showBase && <View style={[styles.writingLine, { top: isSquare ? 35 : 45 }]} />}
+                                                    <View style={{ flexDirection: 'row', position: 'absolute', top: isSquare ? 3 : 5, left: 10 }}>
                                                         {Array.from({ length: Math.max(1, getNum(writingSettings.minRepetitions, 1)) }).map((_, rIdx) => (
-                                                            <Text key={rIdx} style={styles.practiceWord}>{word}</Text>
+                                                            <Text key={rIdx} style={[
+                                                                styles.practiceWord,
+                                                                isSquare ? { fontSize: (writingSettings.practiceFontSize || 28) * 0.8, marginRight: 20 } : {}
+                                                            ]}>
+                                                                {word}
+                                                            </Text>
                                                         ))}
                                                     </View>
                                                 </View>
@@ -257,7 +287,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                             {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: m.bottom - 12, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{2 + (state.frontMatter?.length || 0) + (idx * 2)}</Text>}
                         </Page>
 
-                        <Page size={[pageWidth, pageHeight]} style={styles.page}>
+                        <Page size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
                             <View style={{ marginTop: rm.top, marginBottom: rm.bottom, marginLeft: rm.left, marginRight: rm.right, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                                 <View style={{ width: pageWidth - (rm.left + rm.right), height: pageHeight - (rm.top + rm.bottom), backgroundColor: '#ffffff', position: 'relative', overflow: 'hidden', borderRadius: safeCornerRadius }}>
                                     {scene.illustration && <Image src={scene.illustration!} style={{ position: 'absolute', top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`, left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`, width: `${getNum(scene.illustrationScale, 1.05) * 100}%`, height: `${getNum(scene.illustrationScale, 1.05) * 100}%`, objectFit: 'cover' }} />}
@@ -273,7 +303,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
 
             {/* Ending Pages */}
             {(state.endingPages || []).map((page, idx) => (
-                <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
+                <Page key={page.id || idx} size={[pageWidth, pageHeight]} style={styles.page} wrap={false}>
                     <View style={{ marginTop: marginTop, marginBottom: marginBottom, marginLeft: marginLeft, marginRight: marginRight, flex: 1 }}>
                         <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
                             {page.title && <Text style={styles.heading}>{page.title}</Text>}
