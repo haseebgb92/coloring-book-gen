@@ -31,17 +31,17 @@ const DecorativeLayer = ({ layout, colors, bleedPt }: {
             right: 0,
             bottom: 0
         }}>
-            <View style={{ position: 'absolute', top: 5 + bleedPt, left: 5 + bleedPt, transform: 'rotate(-15deg)', opacity }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={72} />
+            <View style={{ position: 'absolute', top: 5 + bleedPt, left: 5 + bleedPt, transform: 'rotate(-15deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={72} opacity={opacity} />
             </View>
-            <View style={{ position: 'absolute', top: 5 + bleedPt, right: 5 + bleedPt, transform: 'rotate(15deg)', opacity }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={50} />
+            <View style={{ position: 'absolute', top: 5 + bleedPt, right: 5 + bleedPt, transform: 'rotate(15deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={50} opacity={opacity} />
             </View>
-            <View style={{ position: 'absolute', bottom: 30 + bleedPt, left: 10 + bleedPt, transform: 'rotate(10deg)', opacity }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={40} />
+            <View style={{ position: 'absolute', bottom: 30 + bleedPt, left: 10 + bleedPt, transform: 'rotate(10deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={40} opacity={opacity} />
             </View>
-            <View style={{ position: 'absolute', bottom: 35 + bleedPt, right: 10 + bleedPt, transform: 'rotate(-10deg)', opacity }}>
-                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={60} />
+            <View style={{ position: 'absolute', bottom: 35 + bleedPt, right: 10 + bleedPt, transform: 'rotate(-10deg)' }}>
+                <DecorativeIconPDF type={layout.iconSet} color={colors.accent || '#000000'} size={60} opacity={opacity} />
             </View>
         </View>
     );
@@ -67,30 +67,30 @@ const ContentFrame = ({ children, colors, layout, safeCornerRadius, borderWeight
     </View>
 );
 
-const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: string, size?: number }) => {
+const DecorativeIconPDF = ({ type, color, size = 16, opacity = 1 }: { type: string, color: string, size?: number, opacity?: number }) => {
     switch (type) {
         case 'stars':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
+                <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
                     <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill={color} />
                 </Svg>
             );
         case 'hearts':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
+                <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
                     <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill={color} />
                 </Svg>
             );
         case 'leaves':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" opacity={opacity}>
                     <Path d="M12 2C12 2 4 6 4 13C4 18 8 21 12 22C16 21 20 18 20 13C20 6 12 2 12 2Z" fill={color} />
                     <Path d="M12 22V12" stroke="#ffffff" strokeWidth="1" opacity={0.5} />
                 </Svg>
             );
         case 'flowers':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
+                <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
                     <Circle cx="12" cy="12" r="3" fill={color} />
                     <Circle cx="12" cy="7" r="3" fill={color} opacity={0.6} />
                     <Circle cx="12" cy="17" r="3" fill={color} opacity={0.6} />
@@ -100,7 +100,7 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
             );
         case 'puzzles':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
+                <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
                     <Rect x="4" y="4" width="7" height="7" rx="1" fill={color} />
                     <Rect x="13" y="4" width="7" height="7" rx="1" fill={color} />
                     <Rect x="4" y="13" width="7" height="7" rx="1" fill={color} />
@@ -109,19 +109,19 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
             );
         case 'geometric':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
+                <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
                     <Rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill={color} />
                 </Svg>
             );
         case 'clouds':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
+                <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
                     <Path d="M17.5 19c-3.037 0-5.5-2.463-5.5-5.5 0-.115.004-.229.011-.342A3.499 3.499 0 0 1 9.5 6.5c1.018 0 1.916.435 2.536 1.13.62-1.096 1.776-1.83 3.111-1.83.655 0 1.25.176 1.76.483.424-2.812 2.85-5 5.76-5a5.992 5.992 0 0 1 5.981 5.508A3.5 3.5 0 0 1 32 10.5c0 1.933-1.567 3.5-3.5 3.5h-11z" fill={color} />
                 </Svg>
             );
         case 'music':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
+                <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
                     <Path d="M9 18V5l12-2v13" stroke={color} strokeWidth="2" fill="none" />
                     <Circle cx="6" cy="18" r="3" fill={color} />
                     <Circle cx="18" cy="16" r="3" fill={color} />
@@ -129,7 +129,7 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
             );
         case 'winter':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24">
+                <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity}>
                     <Path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" stroke={color} strokeWidth="1.5" fill="none" />
                     <Path d="M12 4l2 2m-4 0l2-2M4 12l2 2m0-4l-2 2M12 20l-2-2m4 0l-2 2M20 12l-2-2m0 4l2-2" stroke={color} strokeWidth="1.5" />
                     <Circle cx="12" cy="12" r="1.5" fill={color} />
@@ -137,7 +137,7 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
             );
         case 'ocean':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" opacity={opacity}>
                     <Path d="M2 6c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
                     <Path d="M2 12c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
                     <Path d="M2 18c.6 0 1.2.2 1.5.5.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5s1.2.2 1.5.5c.3.3.9.5 1.5.5s1.2-.2 1.5-.5c.3-.3.9-.5 1.5-.5" />
@@ -145,28 +145,28 @@ const DecorativeIconPDF = ({ type, color, size = 16 }: { type: string, color: st
             );
         case 'sun':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" opacity={opacity}>
                     <Circle cx="12" cy="12" r="5" fill={color} />
-                    <Path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeLinecap="round" />
+                    <Path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeLinecap="round" stroke={color} />
                 </Svg>
             );
         case 'butterfly':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" opacity={opacity}>
                     <Path d="M12 10c0-4 4-6 6-4s2 6-2 8c4 2 4 8 0 10s-8-2-4-10c0 0-4 2-8 0s-4-8 0-10s6 0 6 4" fill={color} fillOpacity="0.4" />
                     <Path d="M12 7v10" stroke={color} strokeWidth="2" strokeLinecap="round" />
                 </Svg>
             );
         case 'dinosaur':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" opacity={opacity}>
                     <Path d="M4 18c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4zM16 18c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4z" fill={color} fillOpacity="0.3" />
                     <Path d="M8 14h8V10l3-2h3M2 14l3-2" stroke={color} strokeWidth="2" />
                 </Svg>
             );
         case 'candy':
             return (
-                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+                <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" opacity={opacity}>
                     <Circle cx="12" cy="12" r="6" fill={color} fillOpacity="0.3" />
                     <Path d="M7 7l10 10M17 7L7 10" stroke={color} />
                     <Path d="M12 6v12M6 12h12" stroke={color} opacity="0.5" />
