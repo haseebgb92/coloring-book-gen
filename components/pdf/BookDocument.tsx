@@ -226,58 +226,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                     right: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
 
-                // All formats use two-page spread layout
-                if (false) {
-                    const squareMargin = {
-                        top: (safeMargins.top * PT_PER_INCH) + bleedPt,
-                        bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
-                        left: (safeMargins.outer * PT_PER_INCH) + bleedPt,
-                        right: (safeMargins.outer * PT_PER_INCH) + bleedPt,
-                    };
-
-                    return (
-                        <Page key={scene.id || idx} size={[pageWidth, pageHeight]} style={styles.page}>
-                            <View style={{ marginTop: squareMargin.top, marginBottom: squareMargin.bottom, marginLeft: squareMargin.left, marginRight: squareMargin.right, flex: 1 }}>
-                                <View style={{ flex: 1, flexDirection: 'column', gap: 15 }}>
-                                    {/* Top Section: Illustration */}
-                                    {scene.illustration && (
-                                        <View style={{ flex: 0.5, position: 'relative', overflow: 'hidden', borderRadius: safeCornerRadius, backgroundColor: '#ffffff' }}>
-                                            <Image src={scene.illustration} style={{ position: 'absolute', top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`, left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`, width: `${getNum(scene.illustrationScale, 1.05) * 100}%`, height: `${getNum(scene.illustrationScale, 1.05) * 100}%`, objectFit: 'cover' }} />
-                                            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderWidth: borderWeight, borderColor: colors.border, borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid', borderRadius: safeCornerRadius }} />
-                                        </View>
-                                    )}
-
-                                    {/* Bottom Section: Story and Words */}
-                                    <ContentFrame colors={colors} layout={layout} safeCornerRadius={safeCornerRadius} borderWeight={borderWeight}>
-                                        {scene.title && <Text style={[styles.heading, { fontSize: layout.headingSize * 0.85 || 24 }]}>{scene.title}</Text>}
-                                        {layout.showIcon && <View style={{ height: 1, width: 60, backgroundColor: colors.accent, opacity: 0.3, marginBottom: 12 }} />}
-                                        {scene.story && <Text style={[styles.text, { textAlign: 'center', fontSize: (layout.bodySize || 14) * 0.85 }]}>{scene.story}</Text>}
-                                        <View style={{ marginTop: 20, width: '100%' }}>
-                                            {scene.words?.slice(0, 2).map((word, wIdx) => (
-                                                <View key={wIdx} style={{ marginTop: 8, marginBottom: 6 }}>
-                                                    <View style={{ position: 'relative', height: 35, width: '100%' }}>
-                                                        {writingSettings.guidelines.showTop && <View style={[styles.writingLine, { top: 0 }]} />}
-                                                        {writingSettings.guidelines.showMid && <View style={[styles.writingLine, { top: 17.5, borderBottomStyle: 'dashed' }]} />}
-                                                        {writingSettings.guidelines.showBase && <View style={[styles.writingLine, { top: 35 }]} />}
-                                                        <View style={{ flexDirection: 'row', position: 'absolute', top: 3, left: 8 }}>
-                                                            {Array.from({ length: Math.min(2, Math.max(1, getNum(writingSettings.minRepetitions, 1))) }).map((_, rIdx) => (
-                                                                <Text key={rIdx} style={[styles.practiceWord, { fontSize: (writingSettings.practiceFontSize || 28) * 0.75, marginRight: 20 }]}>{word}</Text>
-                                                            ))}
-                                                        </View>
-                                                    </View>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    </ContentFrame>
-                                </View>
-                            </View>
-                            <DecorativeLayer layout={layout} colors={colors} bleedPt={bleedPt} />
-                            {printSettings.pageNumbers.enabled && <Text style={{ position: 'absolute', bottom: squareMargin.bottom - 12, left: 0, right: 0, textAlign: 'center', color: colors.pageNumber, fontSize: 10 }}>{(state.frontMatter?.length || 0) + idx + 1}</Text>}
-                        </Page>
-                    );
-                }
-
-                // For other formats, keep the existing two-page spread layout
+                // Return two-page spread layout for all formats
                 return (
                     <React.Fragment key={scene.id || idx}>
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
@@ -311,7 +260,7 @@ export function BookDocument({ state }: { state: ProjectState }) {
                         <Page size={[pageWidth, pageHeight]} style={styles.page}>
                             <View style={{ marginTop: rm.top, marginBottom: rm.bottom, marginLeft: rm.left, marginRight: rm.right, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                                 <View style={{ width: pageWidth - (rm.left + rm.right), height: pageHeight - (rm.top + rm.bottom), backgroundColor: '#ffffff', position: 'relative', overflow: 'hidden', borderRadius: safeCornerRadius }}>
-                                    {scene.illustration && <Image src={scene.illustration} style={{ position: 'absolute', top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`, left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`, width: `${getNum(scene.illustrationScale, 1.05) * 100}%`, height: `${getNum(scene.illustrationScale, 1.05) * 100}%`, objectFit: 'cover' }} />}
+                                    {scene.illustration && <Image src={scene.illustration!} style={{ position: 'absolute', top: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionY, 0) * getNum(scene.illustrationScale, 1.05))}%`, left: `${((1 - getNum(scene.illustrationScale, 1.05)) / 2 * 100) + (getNum(scene.illustrationPositionX, 0) * getNum(scene.illustrationScale, 1.05))}%`, width: `${getNum(scene.illustrationScale, 1.05) * 100}%`, height: `${getNum(scene.illustrationScale, 1.05) * 100}%`, objectFit: 'cover' }} />}
                                     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderWidth: borderWeight, borderColor: colors.border, borderStyle: layout?.borderStyle === 'dashed' ? 'dashed' : 'solid', borderRadius: safeCornerRadius }} />
                                 </View>
                             </View>
