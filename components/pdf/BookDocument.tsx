@@ -157,20 +157,26 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const colors = template?.colors;
     const layout = template?.layout;
 
-    const normalizedTrim = (trimSize || '').toLowerCase().replace(/\s/g, '');
-    const isSquare = normalizedTrim === '8.5x8.5';
+    const normalizedTrim = (trimSize || '').toLowerCase().replace(/\s+/g, '');
+
+    // Aggressive square detection
+    const isSquare = normalizedTrim.includes('8.5x8.5') ||
+        (normalizedTrim.includes('8.5') && !normalizedTrim.includes('11') && !normalizedTrim.includes('9') && !normalizedTrim.includes('10'));
 
     let widthIn = 8.5;
     let heightIn = 11;
-    if (normalizedTrim === '6x9') { widthIn = 6; heightIn = 9; }
-    else if (normalizedTrim === '8x10') { widthIn = 8; heightIn = 10; }
+
+    if (normalizedTrim.includes('6x9')) { widthIn = 6; heightIn = 9; }
+    else if (normalizedTrim.includes('8x10')) { widthIn = 8; heightIn = 10; }
     else if (isSquare) { widthIn = 8.5; heightIn = 8.5; }
+    else { widthIn = 8.5; heightIn = 11; }
 
     const width = widthIn * PT_PER_INCH;
     const height = heightIn * PT_PER_INCH;
     const bleedPt = bleed ? 0.125 * PT_PER_INCH : 0;
     const pageWidth = width + (bleed ? bleedPt * 2 : 0);
-    const pageHeight = height + (bleed ? bleedPt * 2 : 0);
+    // FORCE SQUARE: If isSquare is true, height MUST be pageWidth
+    const pageHeight = isSquare ? pageWidth : (height + (bleed ? bleedPt * 2 : 0));
 
     const getNum = (val: any, fallback: number) => {
         const n = Number(val);
