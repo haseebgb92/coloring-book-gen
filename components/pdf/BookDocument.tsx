@@ -157,13 +157,14 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const colors = template?.colors;
     const layout = template?.layout;
 
-    // Use multiple checks to be absolutely sure about square format
-    const trimStr = (trimSize || '').toLowerCase();
-    const isSquare = trimStr.includes('8.5x8.5') || (trimStr.split('x').filter(v => v.includes('8.5')).length >= 2);
+    const normalizedTrim = (trimSize || '').toLowerCase().replace(/\s/g, '');
+    const isSquare = normalizedTrim === '8.5x8.5';
 
-    const [widthIn, heightIn] = trimStr.includes('6x9') ? [6, 9] :
-        trimStr.includes('8x10') ? [8, 10] :
-            isSquare ? [8.5, 8.5] : [8.5, 11];
+    let widthIn = 8.5;
+    let heightIn = 11;
+    if (normalizedTrim === '6x9') { widthIn = 6; heightIn = 9; }
+    else if (normalizedTrim === '8x10') { widthIn = 8; heightIn = 10; }
+    else if (isSquare) { widthIn = 8.5; heightIn = 8.5; }
 
     const width = widthIn * PT_PER_INCH;
     const height = heightIn * PT_PER_INCH;
@@ -186,8 +187,8 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const safeCornerRadius = Math.max(0, getNum(layout?.cornerRadius, 0));
     const borderWeight = (layout?.borderStyle && layout?.borderStyle !== 'none') ? 2 : 0;
 
-    const pageTop = (isSquare ? safeMargins.outer : safeMargins.top) * PT_PER_INCH + bleedPt;
-    const pageBottom = (isSquare ? safeMargins.outer : safeMargins.bottom) * PT_PER_INCH + bleedPt;
+    const pageTop = (isSquare ? safeMargins.top : safeMargins.top) * PT_PER_INCH + bleedPt;
+    const pageBottom = (isSquare ? safeMargins.top : safeMargins.bottom) * PT_PER_INCH + bleedPt;
     const pageLeft = (isSquare ? safeMargins.outer : safeMargins.outer) * PT_PER_INCH + bleedPt;
     const pageRight = (isSquare ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt;
 
@@ -227,14 +228,14 @@ export function BookDocument({ state }: { state: ProjectState }) {
                 const isOdd = (idx * 2 + (state.frontMatter?.length || 0)) % 2 !== 0;
                 // For square format, use uniform margins on all sides
                 const page1Margins = {
-                    top: (isSquare ? safeMargins.outer : safeMargins.top) * PT_PER_INCH + bleedPt,
-                    bottom: (isSquare ? safeMargins.outer : safeMargins.bottom) * PT_PER_INCH + bleedPt,
+                    top: (isSquare ? safeMargins.top : safeMargins.top) * PT_PER_INCH + bleedPt,
+                    bottom: (isSquare ? safeMargins.top : safeMargins.bottom) * PT_PER_INCH + bleedPt,
                     left: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
                     right: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
                 const page2Margins = {
-                    top: (isSquare ? safeMargins.outer : safeMargins.top) * PT_PER_INCH + bleedPt,
-                    bottom: (isSquare ? safeMargins.outer : safeMargins.bottom) * PT_PER_INCH + bleedPt,
+                    top: (isSquare ? safeMargins.top : safeMargins.top) * PT_PER_INCH + bleedPt,
+                    bottom: (isSquare ? safeMargins.top : safeMargins.bottom) * PT_PER_INCH + bleedPt,
                     left: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
                     right: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
