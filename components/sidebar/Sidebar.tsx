@@ -66,17 +66,41 @@ export function Sidebar({ className }: { className?: string }) {
 
     const handleCloudSave = async () => {
         if (isSaving) return;
-
-        const payload = JSON.stringify(state);
-        const sizeInMb = payload.length / (1024 * 1024);
-
-        if (sizeInMb > 4.5) {
-            alert(`Project is too large (${sizeInMb.toFixed(1)}MB). Vercel limits are 4.5MB. Please remove some large images or reduce their count before saving.`);
-            return;
-        }
-
         setIsSaving(true);
+
         try {
+            // 1. Auto-optimize scenes if they contain large base64 strings
+            const { compressImage } = await import('@/lib/image-utils');
+            let optimizedState = { ...state };
+            let wasOptimized = false;
+
+            const optimizedScenes = await Promise.all(state.scenes.map(async (scene) => {
+                // If larger than ~300KB as base64, compress it
+                if (scene.illustration && scene.illustration.length > 400000) {
+                    try {
+                        const compressed = await compressImage(scene.illustration);
+                        wasOptimized = true;
+                        return { ...scene, illustration: compressed };
+                    } catch (e) {
+                        return scene;
+                    }
+                }
+                return scene;
+            }));
+
+            if (wasOptimized) {
+                optimizedState.scenes = optimizedScenes;
+                // Update local store too so we don't re-compress next time
+                useProjectStore.setState({ scenes: optimizedScenes });
+            }
+
+            const payload = JSON.stringify(optimizedState);
+            const sizeInMb = payload.length / (1024 * 1024);
+
+            if (sizeInMb > 4.5) {
+                throw new Error(`Project is still too large (${sizeInMb.toFixed(1)}MB). Try removing some scenes or using smaller illustrations.`);
+            }
+
             const response = await fetch('/api/project', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
