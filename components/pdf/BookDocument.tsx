@@ -212,21 +212,22 @@ export function BookDocument({ state }: { state: ProjectState }) {
             {/* Scenes */}
             {(scenes || []).map((scene, idx) => {
                 const isOdd = (idx * 2 + (state.frontMatter?.length || 0)) % 2 !== 0;
+                // For square format, use uniform margins on all sides
                 const m = {
                     top: (safeMargins.top * PT_PER_INCH) + bleedPt,
                     bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
-                    left: (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
-                    right: (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
+                    left: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
+                    right: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
                 const rm = {
                     top: (safeMargins.top * PT_PER_INCH) + bleedPt,
                     bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
-                    left: (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
-                    right: (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
+                    left: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
+                    right: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
 
-                // For square format (8.5x8.5), create single combined pages
-                if (trimSize === '8.5x8.5') {
+                // All formats use two-page spread layout
+                if (false) {
                     const squareMargin = {
                         top: (safeMargins.top * PT_PER_INCH) + bleedPt,
                         bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
