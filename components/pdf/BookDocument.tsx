@@ -157,9 +157,13 @@ export function BookDocument({ state }: { state: ProjectState }) {
     const colors = template?.colors;
     const layout = template?.layout;
 
-    const [widthIn, heightIn] = trimSize === '6x9' ? [6, 9] :
-        trimSize === '8x10' ? [8, 10] :
-            trimSize === '8.5x8.5' ? [8.5, 8.5] : [8.5, 11];
+    const normalizedTrimSize = (trimSize || '').toLowerCase().replace(/\s+/g, '');
+    const isSquare = normalizedTrimSize === '8.5x8.5';
+
+    const [widthIn, heightIn] = normalizedTrimSize === '6x9' ? [6, 9] :
+        normalizedTrimSize === '8x10' ? [8, 10] :
+            isSquare ? [8.5, 8.5] : [8.5, 11];
+
     const width = widthIn * PT_PER_INCH;
     const height = heightIn * PT_PER_INCH;
     const bleedPt = bleed ? 0.125 * PT_PER_INCH : 0;
@@ -183,8 +187,8 @@ export function BookDocument({ state }: { state: ProjectState }) {
 
     const marginTop = (safeMargins.top * PT_PER_INCH) + bleedPt;
     const marginBottom = (safeMargins.bottom * PT_PER_INCH) + bleedPt;
-    const marginLeft = (safeMargins.outer * PT_PER_INCH) + bleedPt;
-    const marginRight = (safeMargins.inner * PT_PER_INCH) + bleedPt;
+    const marginLeft = (isSquare ? safeMargins.outer : safeMargins.outer) * PT_PER_INCH + bleedPt;
+    const marginRight = (isSquare ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt;
 
     const styles = StyleSheet.create({
         page: { backgroundColor: colors.background || '#ffffff', fontFamily: 'Helvetica' },
@@ -224,17 +228,17 @@ export function BookDocument({ state }: { state: ProjectState }) {
                 const m = {
                     top: (safeMargins.top * PT_PER_INCH) + bleedPt,
                     bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
-                    left: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
-                    right: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
+                    left: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
+                    right: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
                 const rm = {
                     top: (safeMargins.top * PT_PER_INCH) + bleedPt,
                     bottom: (safeMargins.bottom * PT_PER_INCH) + bleedPt,
-                    left: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
-                    right: trimSize === '8.5x8.5' ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
+                    left: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.inner : safeMargins.outer) * PT_PER_INCH + bleedPt,
+                    right: isSquare ? (safeMargins.outer * PT_PER_INCH) + bleedPt : (!isOdd ? safeMargins.outer : safeMargins.inner) * PT_PER_INCH + bleedPt,
                 };
 
-                const isSquare = trimSize === '8.5x8.5';
+                // isSquare already defined at top scope
 
                 // Return two-page spread layout for all formats
                 return (
