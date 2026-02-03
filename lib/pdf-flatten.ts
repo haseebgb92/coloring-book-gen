@@ -55,5 +55,5 @@ export async function flattenPDF(pdfBlob: Blob): Promise<Blob> {
     }
 
     const pdfBytes = await outPdf.save();
-    return new Blob([pdfBytes], { type: 'application/pdf' });
+    return new Blob([pdfBytes as any], { type: 'application/pdf' });
 }
