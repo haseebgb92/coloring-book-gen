@@ -15,24 +15,37 @@ export function ExportSection() {
     const [shareUrl, setShareUrl] = useState<string | null>(null);
     const [lastSynced, setLastSynced] = useState<number | null>(null);
 
+    const [exportStatus, setExportStatus] = useState<string>('Generating PDF...');
+
     const handleExport = async () => {
         if (isExporting) return;
 
         setIsExporting(true);
-        console.log('Generating PDF...');
+        setExportStatus('Generating PDF...');
 
         try {
-            // Generate the PDF as a blob on demand
-            // This ensures all current state changes are captured
+            // 1. Generate the base PDF from react-pdf
             const doc = <BookDocument state={state} />;
-            const blob = await pdf(doc).toBlob();
+            let blob = await pdf(doc).toBlob();
 
-            // Create download link
+            // 2. Apply Flattening if requested
+            if (state.printSettings.flatten) {
+                setExportStatus('Flattening PDF (300 DPI)...');
+                try {
+                    const { flattenPDF } = await import('@/lib/pdf-flatten');
+                    blob = await flattenPDF(blob);
+                } catch (flatErr) {
+                    console.error('Flattening failed, falling back to standard PDF', flatErr);
+                    alert('Flattening failed, but we will still download the standard PDF for you.');
+                }
+            }
+
+            // 3. Create download link
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             const fileName = (state.name || 'coloring-book').replace(/\s+/g, '-').toLowerCase();
-            link.download = `${fileName}.pdf`;
+            link.download = `${fileName}${state.printSettings.flatten ? '-flattened' : ''}.pdf`;
 
             document.body.appendChild(link);
             link.click();
@@ -153,7 +166,7 @@ export function ExportSection() {
                     {isExporting ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Generating PDF...
+                            {exportStatus}
                         </>
                     ) : (
                         <>
